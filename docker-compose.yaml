@@ -1,0 +1,15 @@
+services:
+  entellogram:
+    build:
+      context: ..
+      dockerfile: entellogram/Dockerfile
+    image: entellogram:latest
+    container_name: entellogram
+    env_file:
+      - ./.env
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      GALLERY_DL_CONFIG: /app/config/gallery-dl.conf
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped

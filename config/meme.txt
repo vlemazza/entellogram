@@ -1,0 +1,6 @@
+# Una regola per riga, nel formato trigger|risposta.
+# Le parole sono ignorate in maiuscolo/minuscolo e abbinate come parole intere.
+# Le emoji vengono abbinate quando compaiono nel messaggio.
+ciao|Ciao! 👋
+buongiorno|Buongiorno ☀️
+❤️|❤️
