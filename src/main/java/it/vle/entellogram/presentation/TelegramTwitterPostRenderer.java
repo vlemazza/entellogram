@@ -9,8 +9,6 @@ import org.jsoup.Jsoup;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,15 +21,12 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 /** Presenta i post X recuperando anche il testo nei sidecar di gallery-dl o via oEmbed. */
 public final class TelegramTwitterPostRenderer implements TelegramPostRenderer {
 
     private static final Logger LOGGER = Logger.getLogger(TelegramTwitterPostRenderer.class.getName());
     private static final Duration X_TEXT_TIMEOUT = Duration.ofSeconds(20);
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Pattern X_STATUS_ID = Pattern.compile("/(?:status|statuses)/(\\d+)(?:[/?#]|$)");
 
@@ -58,7 +53,7 @@ public final class TelegramTwitterPostRenderer implements TelegramPostRenderer {
         }
         removeMetadataFiles(post);
 
-        return new TelegramPostContent("", text, twitter.getUrlProfile(), true, List.of(
+        return TelegramPostContent.withText("", text, twitter.getUrlProfile(), true, List.of(
                 /**TelegramPostRendererSupport.field("Reply", twitter.getReplyCount()),
                 TelegramPostRendererSupport.field("Retweet", twitter.getRetweetCount()),
                 TelegramPostRendererSupport.field("Quote", twitter.getQuoteCount()),*/
@@ -122,15 +117,11 @@ public final class TelegramTwitterPostRenderer implements TelegramPostRenderer {
             URI endpoint = URI.create("https://publish.x.com/oembed?url="
                     + URLEncoder.encode(postUrl, StandardCharsets.UTF_8)
                     + "&omit_script=true");
-            HttpRequest request = HttpRequest.newBuilder(endpoint)
-                    .timeout(X_TEXT_TIMEOUT)
-                    .header("Accept", "application/json")
-                    .header("User-Agent", "Mozilla/5.0 Entellogram/1.0")
-                    .GET()
-                    .build();
-            HttpResponse<String> response = HTTP_CLIENT.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+            HttpResponse<String> response = TelegramHttpClient.get(
+                    endpoint,
+                    X_TEXT_TIMEOUT,
+                    "application/json",
+                    "Mozilla/5.0 Entellogram/1.0"
             );
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 LOGGER.warning("X oEmbed returned HTTP " + response.statusCode() + " for post " + postId);

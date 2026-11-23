@@ -11,7 +11,7 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       GALLERY_DL_CONFIG: /app/config/gallery-dl.conf
       MEME_AUDIO_DIR: /audio
-      MEME_COOLDOWN: ${MEME_COOLDOWN:-3600}
+      MEME_COOLDOWN: ${MEME_COOLDOWN:-}
     volumes:
       - ./config:/app/config:rw
       - ./audio:/audio:ro

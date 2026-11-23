@@ -15,6 +15,6 @@ public final class TelegramPinterestPostRenderer implements TelegramPostRenderer
     @Override
     public TelegramPostContent render(ExtractedPost post) {
         ExtractedPostPinterest pinterest = (ExtractedPostPinterest) post;
-        return new TelegramPostContent(pinterest.getTitle(), List.of());
+        return TelegramPostContent.withDetails(pinterest.getTitle(), List.of());
     }
 }

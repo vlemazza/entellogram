@@ -17,6 +17,7 @@ public final class TelegramMessageMapper {
     public TelegramMessageMapper() {
         this(List.of(
                 new TelegramTwitterPostRenderer(),
+                new TelegramFacebookPostRenderer(),
                 new TelegramRedditPostRenderer(),
                 new TelegramPixivPostRenderer(),
                 new TelegramPinterestPostRenderer(),
@@ -32,11 +33,6 @@ public final class TelegramMessageMapper {
         this.renderers = List.copyOf(renderers);
     }
 
-    /** Crea il messaggio completo per un post testuale, con citazione e dettagli del social. */
-    public String formatText(ExtractedPost post, String sourceUrl) {
-        return formatText(post, sourceUrl, prepare(post, sourceUrl));
-    }
-
     public String formatText(ExtractedPost post, String sourceUrl, TelegramPostContent platform) {
         String title = truncate(platform.title(), MAX_TITLE_CODE_POINTS);
         String body = bodyOf(post, platform);
@@ -47,7 +43,6 @@ public final class TelegramMessageMapper {
             body = title;
             title = "";
         }
-        body = truncate(body, MAX_QUOTE_CODE_POINTS);
 
         String author = platform.authorText() == null ? post.getAuthor() : platform.authorText();
         String authorText = author == null || author.isBlank() ? "User name not found :(" : author;
@@ -64,8 +59,7 @@ public final class TelegramMessageMapper {
         }
         if (!body.isBlank()) {
             visibleLength += appendSectionSeparator(html);
-            html.append("<blockquote>").append(escapeHtml(body)).append("</blockquote>");
-            visibleLength += body.codePointCount(0, body.length());
+            visibleLength += appendQuote(html, body, MAX_QUOTE_CODE_POINTS);
         }
         if (!platform.authorBeforeText()) {
             visibleLength += appendSectionSeparator(html);
@@ -76,11 +70,6 @@ public final class TelegramMessageMapper {
         appendFields(html, platform.fields(), Math.max(0,
                 Math.min(1_000, MAX_MESSAGE_CODE_POINTS - visibleLength - 2)));
         return html.toString();
-    }
-
-    /** Crea la didascalia condivisa da foto e video, entro il limite dell'API Telegram. */
-    public String formatMediaCaption(ExtractedPost post, String sourceUrl) {
-        return formatMediaCaption(post, sourceUrl, prepare(post, sourceUrl));
     }
 
     public String formatMediaCaption(ExtractedPost post, String sourceUrl, TelegramPostContent platform) {
@@ -96,7 +85,6 @@ public final class TelegramMessageMapper {
         String authorLine = formatAuthorLine(linkText, authorLink(platform, sourceUrl), platform.authorLabel());
         int descriptionBudget = Math.max(0, MAX_CAPTION_CODE_POINTS
                 - linkText.codePointCount(0, linkText.length()) - (description.isBlank() ? 0 : 2));
-        description = truncate(description, descriptionBudget);
 
         StringBuilder caption = new StringBuilder();
         int visibleLength = 0;
@@ -104,14 +92,12 @@ public final class TelegramMessageMapper {
             caption.append(authorLine);
             visibleLength += linkText.codePointCount(0, linkText.length());
             if (!description.isBlank()) {
-                caption.append("\n\n<blockquote>").append(escapeHtml(description)).append("</blockquote>");
-                visibleLength += 2 + description.codePointCount(0, description.length());
+                caption.append("\n\n");
+                visibleLength += 2 + appendQuote(caption, description, descriptionBudget);
             }
         } else {
             if (!description.isBlank()) {
-                description = truncate(description, MAX_CAPTION_CODE_POINTS);
-                caption.append("<blockquote>").append(escapeHtml(description)).append("</blockquote>");
-                visibleLength = description.codePointCount(0, description.length());
+                visibleLength = appendQuote(caption, description, descriptionBudget);
             }
             if (!caption.isEmpty()) {
                 caption.append("\n\n");
@@ -165,6 +151,15 @@ public final class TelegramMessageMapper {
         }
         html.append("\n\n");
         return 2;
+    }
+
+    private int appendQuote(StringBuilder html, String value, int maxCodePoints) {
+        String quote = truncate(value, maxCodePoints);
+        if (quote.isBlank()) {
+            return 0;
+        }
+        html.append("<blockquote>").append(escapeHtml(quote)).append("</blockquote>");
+        return quote.codePointCount(0, quote.length());
     }
 
     private void appendFields(StringBuilder html, List<TelegramPostContent.Field> fields, int budget) {

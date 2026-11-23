@@ -39,7 +39,7 @@ public final class TelegramBlueskyPostRenderer implements TelegramPostRenderer {
         fields.add(TelegramPostRendererSupport.field("Risposte", bluesky.getReplyCount()));
         fields.add(TelegramPostRendererSupport.field("Ripubblicazioni", bluesky.getRepostCount()));
         fields.add(TelegramPostRendererSupport.field("Mi piace", bluesky.getLikeCount()));
-        return new TelegramPostContent("", fields);
+        return TelegramPostContent.withDetails("", fields);
     }
 
     private String blueskyPostUrl(String uri) {

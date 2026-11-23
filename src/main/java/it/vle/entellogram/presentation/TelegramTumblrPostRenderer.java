@@ -15,7 +15,7 @@ public final class TelegramTumblrPostRenderer implements TelegramPostRenderer {
     @Override
     public TelegramPostContent render(ExtractedPost post) {
         ExtractedPostTumblr tumblr = (ExtractedPostTumblr) post;
-        return new TelegramPostContent("", List.of(
+        return TelegramPostContent.withDetails("", List.of(
                 TelegramPostRendererSupport.field("Tags", TelegramPostRendererSupport.join(tumblr.getTags()))
         ));
     }
