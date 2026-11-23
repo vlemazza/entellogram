@@ -13,26 +13,27 @@ public record TelegramPostContent(
         List<Field> fields
 ) {
 
-    public TelegramPostContent(String title, List<Field> fields) {
-        this(title, null, null, null, null, false, fields);
+    public static TelegramPostContent withDetails(String title, List<Field> fields) {
+        return new TelegramPostContent(title, null, null, null, null, false, fields);
     }
 
-    public TelegramPostContent(String title, String authorLink, List<Field> fields) {
-        this(title, null, null, null, authorLink, false, fields);
+    public static TelegramPostContent withAuthor(
+            String title,
+            String authorText,
+            String authorLabel,
+            List<Field> fields
+    ) {
+        return new TelegramPostContent(title, null, authorText, authorLabel, null, false, fields);
     }
 
-    public TelegramPostContent(String title, String authorLink, boolean authorBeforeText, List<Field> fields) {
-        this(title, null, null, null, authorLink, authorBeforeText, fields);
-    }
-
-    public TelegramPostContent(
+    public static TelegramPostContent withText(
             String title,
             String text,
             String authorLink,
             boolean authorBeforeText,
             List<Field> fields
     ) {
-        this(title, text, null, null, authorLink, authorBeforeText, fields);
+        return new TelegramPostContent(title, text, null, null, authorLink, authorBeforeText, fields);
     }
 
     public TelegramPostContent {

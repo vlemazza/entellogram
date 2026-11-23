@@ -15,7 +15,7 @@ public final class TelegramRedditPostRenderer implements TelegramPostRenderer {
     @Override
     public TelegramPostContent render(ExtractedPost post) {
         ExtractedPostReddit reddit = (ExtractedPostReddit) post;
-        return new TelegramPostContent(reddit.getTitle(), List.of(
+        return TelegramPostContent.withDetails(reddit.getTitle(), List.of(
                 TelegramPostRendererSupport.field("Subreddit", reddit.getSubreddit()),
                 TelegramPostRendererSupport.field("Upvote", reddit.getUpvote()),
                 TelegramPostRendererSupport.field("Commenti", reddit.getNumComments()),

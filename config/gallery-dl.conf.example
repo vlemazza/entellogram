@@ -4,6 +4,9 @@
             "text-tweets": true,
             "retweets": "original"
         },
+        "facebook": {
+            "cookies": "/app/config/session/facebook_cookies.txt"
+        },
         "tiktok": {
             "cookies": "/app/config/session/tiktok_cookies.txt",
             "audio": "ytdl",

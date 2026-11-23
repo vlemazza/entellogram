@@ -15,6 +15,6 @@ public final class TelegramPixivPostRenderer implements TelegramPostRenderer {
     @Override
     public TelegramPostContent render(ExtractedPost post) {
         ExtractedPostPixiv pixiv = (ExtractedPostPixiv) post;
-        return new TelegramPostContent(pixiv.getTitle(), List.of());
+        return TelegramPostContent.withDetails(pixiv.getTitle(), List.of());
     }
 }

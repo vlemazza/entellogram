@@ -15,7 +15,7 @@ public final class TelegramAo3PostRenderer implements TelegramPostRenderer {
     @Override
     public TelegramPostContent render(ExtractedPost post) {
         ExtractedPostAO3 ao3 = (ExtractedPostAO3) post;
-        return new TelegramPostContent(ao3.getTitle(), List.of(
+        return TelegramPostContent.withDetails(ao3.getTitle(), List.of(
                 TelegramPostRendererSupport.field("Rating", TelegramPostRendererSupport.join(ao3.getRating())),
                 TelegramPostRendererSupport.field("Categorie", TelegramPostRendererSupport.join(ao3.getCategories())),
                 TelegramPostRendererSupport.field("Fandom", TelegramPostRendererSupport.join(ao3.getFandoms())),

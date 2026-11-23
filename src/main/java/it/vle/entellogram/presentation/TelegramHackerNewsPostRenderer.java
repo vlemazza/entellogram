@@ -15,7 +15,7 @@ public final class TelegramHackerNewsPostRenderer implements TelegramPostRendere
     @Override
     public TelegramPostContent render(ExtractedPost post) {
         ExtractedPostHackerNews hackerNews = (ExtractedPostHackerNews) post;
-        return new TelegramPostContent(hackerNews.getTitle(), List.of(
+        return TelegramPostContent.withDetails(hackerNews.getTitle(), List.of(
                 TelegramPostRendererSupport.field("Tipo", hackerNews.getType()),
                 TelegramPostRendererSupport.field("Punteggio", hackerNews.getScore()),
                 TelegramPostRendererSupport.link("Link", hackerNews.getUrl(), hackerNews.getUrl())

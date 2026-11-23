@@ -19,14 +19,6 @@ public final class TelegramYoutubePostRenderer implements TelegramPostRenderer {
         if (channel == null || channel.isBlank()) {
             channel = youtube.getAuthor();
         }
-        return new TelegramPostContent(
-                youtube.getTitle(),
-                null,
-                channel,
-                "Canale",
-                null,
-                false,
-                List.of()
-        );
+        return TelegramPostContent.withAuthor(youtube.getTitle(), channel, "Canale", List.of());
     }
 }

@@ -21,7 +21,6 @@ import com.pengrad.telegrambot.response.SendResponse;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,9 +39,6 @@ public class TelegramBotClient implements AutoCloseable {
     }
 
     /** Invia il testo, dividendolo in messaggi che rispettano il limite Telegram. */
-    public int sendMessage(long chatId, String text) throws IOException {
-        return sendMessage(chatId, text, null);
-    }
 
     public int sendMessage(long chatId, String text, Integer replyToMessageId) throws IOException {
         int start = 0;
@@ -89,15 +85,15 @@ public class TelegramBotClient implements AutoCloseable {
     /** Invia un file con didascalia HTML, usata per tenere descrizione e video nello stesso messaggio. */
     public void sendFile(long chatId, Path path, String caption) throws IOException {
         File file = path.toFile();
-        String contentType = Files.probeContentType(path);
+        TelegramMediaType mediaType = TelegramMediaType.from(path);
         SendResponse response;
-        if (isImage(path, contentType)) {
+        if (mediaType == TelegramMediaType.PHOTO) {
             SendPhoto request = new SendPhoto(chatId, file);
             if (caption != null && !caption.isBlank()) {
                 request.caption(caption).parseMode(ParseMode.HTML);
             }
             response = bot.execute(request);
-        } else if ((contentType != null && contentType.startsWith("video/")) || caption != null) {
+        } else if (mediaType == TelegramMediaType.VIDEO || caption != null) {
             SendVideo request = new SendVideo(chatId, file);
             if (caption != null && !caption.isBlank()) {
                 request.caption(caption).parseMode(ParseMode.HTML);
@@ -124,11 +120,11 @@ public class TelegramBotClient implements AutoCloseable {
             for (int i = 0; i < group.size(); i++) {
                 Path path = group.get(i);
                 File file = path.toFile();
-                String contentType = Files.probeContentType(path);
+                TelegramMediaType mediaType = TelegramMediaType.from(path);
                 InputMedia<?> item;
-                if (isImage(path, contentType)) {
+                if (mediaType == TelegramMediaType.PHOTO) {
                     item = new InputMediaPhoto(file);
-                } else if (isVideo(path, contentType)) {
+                } else if (mediaType == TelegramMediaType.VIDEO) {
                     item = new InputMediaVideo(file);
                 } else {
                     throw new IOException("Telegram albums support only photos and videos: " + path);
@@ -143,24 +139,6 @@ public class TelegramBotClient implements AutoCloseable {
             MessagesResponse response = bot.execute(new SendMediaGroup(chatId, media.toArray(InputMedia[]::new)));
             ensureOk(response);
         }
-    }
-
-    private boolean isImage(Path path, String contentType) {
-        if (contentType != null && contentType.startsWith("image/") && !contentType.equals("image/gif")) {
-            return true;
-        }
-        String filename = path.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
-        return filename.endsWith(".jpg") || filename.endsWith(".jpeg")
-                || filename.endsWith(".png") || filename.endsWith(".webp");
-    }
-
-    private boolean isVideo(Path path, String contentType) {
-        if (contentType != null && contentType.startsWith("video/")) {
-            return true;
-        }
-        String filename = path.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
-        return filename.endsWith(".mp4") || filename.endsWith(".mov")
-                || filename.endsWith(".m4v") || filename.endsWith(".webm");
     }
 
     private void ensureOk(BaseResponse response) throws IOException {
