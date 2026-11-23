@@ -10,6 +10,9 @@ services:
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       GALLERY_DL_CONFIG: /app/config/gallery-dl.conf
+      MEME_AUDIO_DIR: /audio
+      MEME_COOLDOWN: ${MEME_COOLDOWN:-3600}
     volumes:
-      - ./config:/app/config:ro
+      - ./config:/app/config:rw
+      - ./audio:/audio:ro
     restart: unless-stopped

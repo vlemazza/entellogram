@@ -23,7 +23,8 @@ RUN apt-get update \
 ENV PIPX_HOME=/opt/pipx
 ENV PIPX_BIN_DIR=/usr/local/bin
 
-RUN pipx install gallery-dl
+RUN pipx install gallery-dl \
+    && pipx inject gallery-dl 'yt-dlp[default]'
 
 WORKDIR /app
 COPY --from=build --chown=entellogram:entellogram /build/entellogram/target/entellogram.jar /app/app.jar

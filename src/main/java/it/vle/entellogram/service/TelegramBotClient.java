@@ -4,18 +4,27 @@ import com.pengrad.telegrambot.ExceptionHandler;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.request.ReplyParameters;
+import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.InputMedia;
+import com.pengrad.telegrambot.model.request.InputMediaPhoto;
+import com.pengrad.telegrambot.model.request.InputMediaVideo;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendDocument;
+import com.pengrad.telegrambot.request.SendAudio;
+import com.pengrad.telegrambot.request.SendMediaGroup;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SendVideo;
 import com.pengrad.telegrambot.response.BaseResponse;
+import com.pengrad.telegrambot.response.MessagesResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Adattatore tra le operazioni usate da entellogram e la libreria Pengrad. */
 public class TelegramBotClient implements AutoCloseable {
@@ -44,7 +53,6 @@ public class TelegramBotClient implements AutoCloseable {
             int startIndex = text.offsetByCodePoints(0, start);
             int endIndex = text.offsetByCodePoints(0, end);
             SendMessage request = new SendMessage(chatId, text.substring(startIndex, endIndex));
-            // Se richiesto, collega il messaggio alla richiesta originale dell'utente.
             if (replyToMessageId != null) {
                 request.replyParameters(new ReplyParameters(replyToMessageId));
             }
@@ -56,23 +64,103 @@ public class TelegramBotClient implements AutoCloseable {
         return lastMessageId;
     }
 
+    /** Invia un singolo messaggio HTML, usato per le citazioni e i dettagli dei post testuali. */
+    public void sendHtmlMessage(long chatId, String html) throws IOException {
+        SendMessage request = new SendMessage(chatId, html).parseMode(ParseMode.HTML);
+        ensureOk(bot.execute(request));
+    }
+
     public void deleteMessage(long chatId, int messageId) throws IOException {
         ensureOk(bot.execute(new DeleteMessage(chatId, messageId)));
     }
 
+    /** Invia un audio come risposta al messaggio che ha attivato il meme. */
+    public void sendAudio(long chatId, Path path, int replyToMessageId) throws IOException {
+        SendAudio request = new SendAudio(chatId, path.toFile())
+                .replyParameters(new ReplyParameters(replyToMessageId));
+        ensureOk(bot.execute(request));
+    }
+
     /** Sceglie il metodo Telegram in base al tipo di file riconosciuto dal sistema. */
     public void sendFile(long chatId, Path path) throws IOException {
+        sendFile(chatId, path, null);
+    }
+
+    /** Invia un file con didascalia HTML, usata per tenere descrizione e video nello stesso messaggio. */
+    public void sendFile(long chatId, Path path, String caption) throws IOException {
         File file = path.toFile();
         String contentType = Files.probeContentType(path);
         SendResponse response;
-        if (contentType != null && contentType.startsWith("image/") && !contentType.equals("image/gif")) {
-            response = bot.execute(new SendPhoto(chatId, file));
-        } else if (contentType != null && contentType.startsWith("video/")) {
-            response = bot.execute(new SendVideo(chatId, file));
+        if (isImage(path, contentType)) {
+            SendPhoto request = new SendPhoto(chatId, file);
+            if (caption != null && !caption.isBlank()) {
+                request.caption(caption).parseMode(ParseMode.HTML);
+            }
+            response = bot.execute(request);
+        } else if ((contentType != null && contentType.startsWith("video/")) || caption != null) {
+            SendVideo request = new SendVideo(chatId, file);
+            if (caption != null && !caption.isBlank()) {
+                request.caption(caption).parseMode(ParseMode.HTML);
+            }
+            response = bot.execute(request);
         } else {
             response = bot.execute(new SendDocument(chatId, file));
         }
         ensureOk(response);
+    }
+
+    /** Invia foto e video come album Telegram, dividendoli in gruppi da massimo dieci. */
+    public void sendMediaGroup(long chatId, List<Path> paths, String caption) throws IOException {
+        for (int start = 0; start < paths.size(); start += 10) {
+            List<Path> group = paths.subList(start, Math.min(start + 10, paths.size()));
+            String groupCaption = start == 0 ? caption : null;
+
+            if (group.size() == 1) {
+                sendFile(chatId, group.getFirst(), groupCaption);
+                continue;
+            }
+
+            List<InputMedia<?>> media = new ArrayList<>(group.size());
+            for (int i = 0; i < group.size(); i++) {
+                Path path = group.get(i);
+                File file = path.toFile();
+                String contentType = Files.probeContentType(path);
+                InputMedia<?> item;
+                if (isImage(path, contentType)) {
+                    item = new InputMediaPhoto(file);
+                } else if (isVideo(path, contentType)) {
+                    item = new InputMediaVideo(file);
+                } else {
+                    throw new IOException("Telegram albums support only photos and videos: " + path);
+                }
+
+                if (i == 0 && groupCaption != null && !groupCaption.isBlank()) {
+                    item.caption(groupCaption).parseMode(ParseMode.HTML);
+                }
+                media.add(item);
+            }
+
+            MessagesResponse response = bot.execute(new SendMediaGroup(chatId, media.toArray(InputMedia[]::new)));
+            ensureOk(response);
+        }
+    }
+
+    private boolean isImage(Path path, String contentType) {
+        if (contentType != null && contentType.startsWith("image/") && !contentType.equals("image/gif")) {
+            return true;
+        }
+        String filename = path.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+        return filename.endsWith(".jpg") || filename.endsWith(".jpeg")
+                || filename.endsWith(".png") || filename.endsWith(".webp");
+    }
+
+    private boolean isVideo(Path path, String contentType) {
+        if (contentType != null && contentType.startsWith("video/")) {
+            return true;
+        }
+        String filename = path.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+        return filename.endsWith(".mp4") || filename.endsWith(".mov")
+                || filename.endsWith(".m4v") || filename.endsWith(".webm");
     }
 
     private void ensureOk(BaseResponse response) throws IOException {

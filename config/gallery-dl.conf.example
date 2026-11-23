@@ -1,7 +1,8 @@
 {
     "extractor": {
         "twitter": {
-            "text-tweets": true
+            "text-tweets": true,
+            "retweets": "original"
         },
         "tiktok": {
             "cookies": "/app/config/session/tiktok_cookies.txt",
@@ -9,7 +10,8 @@
             "videos": "ytdl"
         },
         "instagram": {
-            "cookies": "/app/config/session/instagram_cookies.txt"
+            "cookies": "/app/config/session/instagram_cookies.txt",
+            "filename": "{media_id}{num:?_//>02}.{extension}"
         },
         "reddit": {
             "refresh-token": "<<TOKEN>>",
