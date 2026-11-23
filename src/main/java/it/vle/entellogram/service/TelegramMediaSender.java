@@ -3,7 +3,7 @@ package it.vle.entellogram.service;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.service.media.MediaProcessor;
 import it.vle.entellogram.presentation.TelegramMessageMapper;
-import it.vle.entellogram.presentation.TelegramPostContent;
+import it.vle.entellogram.presentation.TelegramPostRenderer;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -33,7 +33,11 @@ public final class TelegramMediaSender {
         this.mediaProcessor = mediaProcessor;
     }
 
-    public PreparedMedia prepare(ExtractedPost post, String sourceUrl, TelegramPostContent presentation)
+    public PreparedMedia prepare(
+            ExtractedPost post,
+            String sourceUrl,
+            TelegramPostRenderer.Content presentation
+    )
             throws IOException {
         if (!post.hasNoMedia()) {
             mediaProcessor.process(post, MAX_FILE_SIZE_BYTES);
@@ -43,15 +47,7 @@ public final class TelegramMediaSender {
         Path captionMedia = findCaptionMedia(media);
         String caption = captionMedia == null
                 ? null
-                : messageMapper.formatMediaCaption(post, sourceUrl, presentation);
-
-        LOGGER.info("Prepared Telegram post: type=" + post.getClass().getSimpleName()
-                + ", postTextChars=" + codePointLength(post.getText())
-                + ", rendererTextChars=" + codePointLength(presentation.text())
-                + ", mediaFiles=" + media.size()
-                + ", captionMedia=" + (captionMedia != null)
-                + ", mediaCaptionChars=" + codePointLength(caption));
-
+                : messageMapper.formatCaption(post, sourceUrl, presentation);
         return new PreparedMedia(media, captionMedia, caption);
     }
 
@@ -119,10 +115,6 @@ public final class TelegramMediaSender {
             return null;
         }
         return new BigInteger(suffix);
-    }
-
-    private int codePointLength(String value) {
-        return value == null ? 0 : value.codePointCount(0, value.length());
     }
 
     public record PreparedMedia(List<Path> files, Path captionMedia, String caption) {

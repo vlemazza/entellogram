@@ -4,7 +4,7 @@ import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.TextExtractionOutcome;
 import it.vle.entellocore.service.ContentExtractionEngine;
 import it.vle.entellogram.presentation.TelegramMessageMapper;
-import it.vle.entellogram.presentation.TelegramPostContent;
+import it.vle.entellogram.presentation.TelegramPostRenderer;
 
 import java.io.IOException;
 import java.util.List;
@@ -117,7 +117,7 @@ public class TelegramPostController {
 
     private void sendPost(long chatId, int sourceMessageId, ExtractedPost post, String sourceUrl) throws IOException {
         try {
-            TelegramPostContent presentation = messageMapper.prepare(post, sourceUrl);
+            TelegramPostRenderer.Content presentation = messageMapper.prepare(post, sourceUrl);
             TelegramMediaSender.PreparedMedia media = mediaSender.prepare(post, sourceUrl, presentation);
 
             int temporaryReplyId = telegram.sendMessage(chatId, randomReplies.randomReply(), sourceMessageId);

@@ -5,7 +5,7 @@ import it.vle.entellocore.model.ExtractedPostHackerNews;
 
 import java.util.List;
 
-public final class TelegramHackerNewsPostRenderer implements TelegramPostRenderer {
+public class TelegramHackerNewsPostRenderer implements TelegramPostRenderer {
 
     @Override
     public boolean supports(ExtractedPost post) {
@@ -13,12 +13,15 @@ public final class TelegramHackerNewsPostRenderer implements TelegramPostRendere
     }
 
     @Override
-    public TelegramPostContent render(ExtractedPost post) {
+    public TelegramPostRenderer.Content render(ExtractedPost post) {
         ExtractedPostHackerNews hackerNews = (ExtractedPostHackerNews) post;
-        return TelegramPostContent.withDetails(hackerNews.getTitle(), List.of(
-                TelegramPostRendererSupport.field("Tipo", hackerNews.getType()),
-                TelegramPostRendererSupport.field("Punteggio", hackerNews.getScore()),
-                TelegramPostRendererSupport.link("Link", hackerNews.getUrl(), hackerNews.getUrl())
-        ));
+        return TelegramPostRenderer.withDetails(
+                hackerNews.getTitle(),
+                List.of(
+                        TelegramPostRenderer.link("Story", "Open", hackerNews.getUrl()),
+                        TelegramPostRenderer.field("Type", hackerNews.getType()),
+                        TelegramPostRenderer.field("Score", hackerNews.getScore())
+                )
+        );
     }
 }

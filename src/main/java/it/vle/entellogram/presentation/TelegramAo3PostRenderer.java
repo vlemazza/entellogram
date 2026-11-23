@@ -3,28 +3,25 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostAO3;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public final class TelegramAo3PostRenderer implements TelegramPostRenderer {
+public class TelegramAo3PostRenderer implements TelegramPostRenderer {
+    @Override
+    public boolean supports(ExtractedPost post) { return post instanceof ExtractedPostAO3; }
 
     @Override
-    public boolean supports(ExtractedPost post) {
-        return post instanceof ExtractedPostAO3;
-    }
-
-    @Override
-    public TelegramPostContent render(ExtractedPost post) {
+    public TelegramPostRenderer.Content render(ExtractedPost post) {
         ExtractedPostAO3 ao3 = (ExtractedPostAO3) post;
-        return TelegramPostContent.withDetails(ao3.getTitle(), List.of(
-                TelegramPostRendererSupport.field("Rating", TelegramPostRendererSupport.join(ao3.getRating())),
-                TelegramPostRendererSupport.field("Categorie", TelegramPostRendererSupport.join(ao3.getCategories())),
-                TelegramPostRendererSupport.field("Fandom", TelegramPostRendererSupport.join(ao3.getFandoms())),
-                TelegramPostRendererSupport.field("Relazioni", TelegramPostRendererSupport.join(ao3.getRelationships())),
-                TelegramPostRendererSupport.field("Personaggi", TelegramPostRendererSupport.join(ao3.getCharacters())),
-                TelegramPostRendererSupport.field("Parole", TelegramPostRendererSupport.positive(ao3.getWords())),
-                TelegramPostRendererSupport.field("Capitoli", ao3.getChapters()),
-                TelegramPostRendererSupport.field("Kudos", TelegramPostRendererSupport.positive(ao3.getKudos())),
-                TelegramPostRendererSupport.field("Visite", TelegramPostRendererSupport.positive(ao3.getHits()))
-        ));
+        List<TelegramPostRenderer.Field> fields = new ArrayList<>();
+        fields.add(TelegramPostRenderer.field("Rating", TelegramPostRenderer.join(ao3.getRating())));
+        fields.add(TelegramPostRenderer.field("Category", TelegramPostRenderer.join(ao3.getCategories())));
+        fields.add(TelegramPostRenderer.field("Fandom", TelegramPostRenderer.join(ao3.getFandoms())));
+        fields.add(TelegramPostRenderer.field("Relationship", TelegramPostRenderer.join(ao3.getRelationships())));
+        fields.add(TelegramPostRenderer.field("Characters", TelegramPostRenderer.join(ao3.getCharacters())));
+        String stats = "Words: " + ao3.getWords() + "\nChapters: " + ao3.getChapters()
+                + "\nKudos: " + ao3.getKudos() + "\nHits: " + ao3.getHits();
+        fields.add(TelegramPostRenderer.field("Stats", stats));
+        return TelegramPostRenderer.withDetails(ao3.getTitle(), fields);
     }
 }

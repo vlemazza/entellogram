@@ -29,7 +29,7 @@ public class Main {
     private static final int PROCESSING_WORKERS = 2;
     private static final int PROCESSING_QUEUE_CAPACITY = 100;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    static void main(String[] args) throws IOException, InterruptedException {
 
         ConfigValidator.validate();
 

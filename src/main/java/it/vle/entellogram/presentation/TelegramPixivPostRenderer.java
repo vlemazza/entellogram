@@ -3,9 +3,7 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostPixiv;
 
-import java.util.List;
-
-public final class TelegramPixivPostRenderer implements TelegramPostRenderer {
+public class TelegramPixivPostRenderer implements TelegramPostRenderer {
 
     @Override
     public boolean supports(ExtractedPost post) {
@@ -13,8 +11,7 @@ public final class TelegramPixivPostRenderer implements TelegramPostRenderer {
     }
 
     @Override
-    public TelegramPostContent render(ExtractedPost post) {
-        ExtractedPostPixiv pixiv = (ExtractedPostPixiv) post;
-        return TelegramPostContent.withDetails(pixiv.getTitle(), List.of());
+    public TelegramPostRenderer.Content render(ExtractedPost post) {
+        return TelegramPostRenderer.withDetails(((ExtractedPostPixiv) post).getTitle(), java.util.List.of());
     }
 }

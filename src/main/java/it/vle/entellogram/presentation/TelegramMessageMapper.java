@@ -1,14 +1,14 @@
 package it.vle.entellogram.presentation;
 
 import it.vle.entellocore.model.ExtractedPost;
+import it.vle.entellocore.model.ExtractedPostPinterest;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
-/** Compone i messaggi Telegram usando un renderer dedicato per ciascun social supportato. */
 public final class TelegramMessageMapper {
 
-    private static final int MAX_TITLE_CODE_POINTS = 400;
-    private static final int MAX_QUOTE_CODE_POINTS = 2_600;
     private static final int MAX_MESSAGE_CODE_POINTS = 4_096;
     private static final int MAX_CAPTION_CODE_POINTS = 1_024;
 
@@ -17,10 +17,8 @@ public final class TelegramMessageMapper {
     public TelegramMessageMapper() {
         this(List.of(
                 new TelegramTwitterPostRenderer(),
-                new TelegramFacebookPostRenderer(),
                 new TelegramRedditPostRenderer(),
                 new TelegramPixivPostRenderer(),
-                new TelegramPinterestPostRenderer(),
                 new TelegramAo3PostRenderer(),
                 new TelegramTumblrPostRenderer(),
                 new TelegramHackerNewsPostRenderer(),
@@ -33,190 +31,142 @@ public final class TelegramMessageMapper {
         this.renderers = List.copyOf(renderers);
     }
 
-    public String formatText(ExtractedPost post, String sourceUrl, TelegramPostContent platform) {
-        String title = truncate(platform.title(), MAX_TITLE_CODE_POINTS);
-        String body = bodyOf(post, platform);
-        if (title.equals(body)) {
-            title = "";
-        }
-        if (body.isBlank()) {
-            body = title;
-            title = "";
-        }
-
-        String author = platform.authorText() == null ? post.getAuthor() : platform.authorText();
-        String authorText = author == null || author.isBlank() ? "User name not found :(" : author;
-
-        StringBuilder html = new StringBuilder();
-        int visibleLength = 0;
-        if (platform.authorBeforeText()) {
-            visibleLength += appendAuthor(html, authorText, authorLink(platform, sourceUrl), "");
-        }
-        if (!title.isBlank()) {
-            visibleLength += appendSectionSeparator(html);
-            html.append("<b>").append(escapeHtml(title)).append("</b>");
-            visibleLength += title.codePointCount(0, title.length());
-        }
-        if (!body.isBlank()) {
-            visibleLength += appendSectionSeparator(html);
-            visibleLength += appendQuote(html, body, MAX_QUOTE_CODE_POINTS);
-        }
-        if (!platform.authorBeforeText()) {
-            visibleLength += appendSectionSeparator(html);
-            String label = platform.authorLabel() == null ? "Autore" : platform.authorLabel();
-            visibleLength += appendAuthor(html, authorText, authorLink(platform, sourceUrl), label);
-        }
-
-        appendFields(html, platform.fields(), Math.max(0,
-                Math.min(1_000, MAX_MESSAGE_CODE_POINTS - visibleLength - 2)));
-        return html.toString();
-    }
-
-    public String formatMediaCaption(ExtractedPost post, String sourceUrl, TelegramPostContent platform) {
-        String description = bodyOf(post, platform);
-        if (description.isBlank()) {
-            description = platform.title().trim();
-        }
-        String author = platform.authorText() == null ? post.getAuthor() : platform.authorText();
-        String linkText = author == null || author.isBlank() ? "User name not found :(" : author;
-
-        int linkBudget = description.isBlank() ? MAX_CAPTION_CODE_POINTS : MAX_CAPTION_CODE_POINTS - 2;
-        linkText = truncate(linkText, linkBudget);
-        String authorLine = formatAuthorLine(linkText, authorLink(platform, sourceUrl), platform.authorLabel());
-        int descriptionBudget = Math.max(0, MAX_CAPTION_CODE_POINTS
-                - linkText.codePointCount(0, linkText.length()) - (description.isBlank() ? 0 : 2));
-
-        StringBuilder caption = new StringBuilder();
-        int visibleLength = 0;
-        if (platform.authorBeforeText()) {
-            caption.append(authorLine);
-            visibleLength += linkText.codePointCount(0, linkText.length());
-            if (!description.isBlank()) {
-                caption.append("\n\n");
-                visibleLength += 2 + appendQuote(caption, description, descriptionBudget);
-            }
-        } else {
-            if (!description.isBlank()) {
-                visibleLength = appendQuote(caption, description, descriptionBudget);
-            }
-            if (!caption.isEmpty()) {
-                caption.append("\n\n");
-                visibleLength += 2;
-            }
-            caption.append(authorLine);
-            visibleLength += linkText.codePointCount(0, linkText.length());
-        }
-
-        appendFields(caption, platform.fields(), Math.max(0, MAX_CAPTION_CODE_POINTS - visibleLength - 2));
-        return caption.toString();
-    }
-
-    /** Esegue una volta il renderer del social e conserva i dati necessari all'invio. */
-    public TelegramPostContent prepare(ExtractedPost post, String sourceUrl) {
-        return renderers.stream()
+    public TelegramPostRenderer.Content prepare(ExtractedPost post, String sourceUrl) {
+        TelegramPostRenderer.Content rendered = renderers.stream()
                 .filter(renderer -> renderer.supports(post))
                 .findFirst()
                 .map(renderer -> renderer.render(post, sourceUrl))
-                .orElseGet(TelegramPostContent::empty);
-    }
-
-    private String bodyOf(ExtractedPost post, TelegramPostContent platform) {
-        String body = post.getText() == null ? "" : post.getText().trim();
-        if (body.isBlank() && platform.text() != null) {
-            body = platform.text().trim();
+                .orElseGet(TelegramPostRenderer.Content::empty);
+        if (rendered.title().isBlank() && post instanceof ExtractedPostPinterest pinterest) {
+            return new TelegramPostRenderer.Content(
+                    pinterest.getTitle(),
+                    rendered.text(),
+                    rendered.authorText(),
+                    rendered.authorLabel(),
+                    rendered.authorLink(),
+                    rendered.authorBeforeText(),
+                    rendered.fields()
+            );
         }
-        return body;
+        return rendered;
     }
 
-    private String authorLink(TelegramPostContent platform, String sourceUrl) {
-        return platform.authorLink() == null || platform.authorLink().isBlank()
-                ? sourceUrl
-                : platform.authorLink();
+    public String formatText(ExtractedPost post, String sourceUrl, TelegramPostRenderer.Content presentation) {
+        return format(post, sourceUrl, presentation, MAX_MESSAGE_CODE_POINTS);
     }
 
-    private int appendAuthor(StringBuilder html, String author, String link, String label) {
-        String prefix = label == null || label.isBlank() ? "" : label + ": ";
-        html.append(escapeHtml(prefix)).append(linkedValue(author, link));
-        return prefix.codePointCount(0, prefix.length()) + author.codePointCount(0, author.length());
+    public String formatCaption(ExtractedPost post, String sourceUrl, TelegramPostRenderer.Content presentation) {
+        return format(post, sourceUrl, presentation, MAX_CAPTION_CODE_POINTS);
     }
 
-    private String formatAuthorLine(String author, String link, String label) {
-        String prefix = label == null || label.isBlank() ? "" : label + ": ";
-        return escapeHtml(prefix) + linkedValue(author, link);
-    }
+    private String format(
+            ExtractedPost post,
+            String sourceUrl,
+            TelegramPostRenderer.Content presentation,
+            int maxCodePoints
+    ) {
+        List<Line> lines = new ArrayList<>();
+        addLine(lines, presentation.title(), null, true);
 
-    private int appendSectionSeparator(StringBuilder html) {
-        if (html.isEmpty()) {
-            return 0;
+        String author = presentation.authorText() == null ? post.getAuthor() : presentation.authorText();
+        String text = presentation.text() == null ? post.getText() : presentation.text();
+        String authorLine = author;
+        if (authorLine != null && presentation.authorLabel() != null && !presentation.authorLabel().isBlank()) {
+            authorLine = presentation.authorLabel() + ": " + authorLine;
         }
-        html.append("\n\n");
-        return 2;
-    }
-
-    private int appendQuote(StringBuilder html, String value, int maxCodePoints) {
-        String quote = truncate(value, maxCodePoints);
-        if (quote.isBlank()) {
-            return 0;
+        if (presentation.authorBeforeText()) {
+            addLine(lines, authorLine, presentation.authorLink(), false);
+            addLine(lines, text, null, false);
+        } else {
+            addLine(lines, text, null, false);
+            addLine(lines, authorLine, presentation.authorLink(), false);
         }
-        html.append("<blockquote>").append(escapeHtml(quote)).append("</blockquote>");
-        return quote.codePointCount(0, quote.length());
-    }
 
-    private void appendFields(StringBuilder html, List<TelegramPostContent.Field> fields, int budget) {
-        StringBuilder rendered = new StringBuilder();
-        for (TelegramPostContent.Field field : fields) {
-            if (budget <= 0) {
-                break;
-            }
-            String label = field.label() == null ? "" : field.label();
-            String prefix = label.isBlank() ? "" : label + ": ";
-            int prefixLength = prefix.codePointCount(0, prefix.length());
-            int availableValueLength = budget - prefixLength;
-            if (availableValueLength <= 0 || field.value() == null || field.value().isBlank()) {
+        for (TelegramPostRenderer.Field field : presentation.fields()) {
+            if (field == null) {
                 continue;
             }
-
-            String value = truncate(field.value(), availableValueLength);
-            if (!rendered.isEmpty()) {
-                rendered.append('\n');
-                budget--;
-            }
-            rendered.append(escapeHtml(prefix)).append(linkedValue(value, field.link()));
-            budget -= prefixLength + value.codePointCount(0, value.length());
+            String value = field.value() == null ? "" : field.value();
+            String label = field.label() == null ? "" : field.label();
+            String fieldText = label.isBlank() ? value : label + ": " + value;
+            addLine(lines, fieldText, field.link(), false);
         }
 
-        if (!rendered.isEmpty()) {
+        TelegramFooter footer = TelegramFooter.findFor(post);
+        if (footer != null) {
+            addLine(lines, footer.text(), null, false);
+        }
+        if (post.getTimestamp() != null) {
+            addLine(lines, Instant.ofEpochSecond(post.getTimestamp()).toString(), null, false);
+        }
+        if (sourceUrl != null && !sourceUrl.isBlank()) {
+            addLine(lines, "Source", sourceUrl, false);
+        }
+
+        StringBuilder html = new StringBuilder();
+        int remaining = maxCodePoints;
+        for (Line line : lines) {
+            if (remaining <= 0) {
+                break;
+            }
             if (!html.isEmpty()) {
-                html.append("\n\n");
+                html.append('\n');
+                remaining--;
             }
-            html.append(rendered);
+
+            int lineLength = line.text().codePointCount(0, line.text().length());
+            int includedLength = Math.min(lineLength, remaining);
+            String includedText = prefixByCodePoints(line.text(), includedLength);
+            if (line.bold()) {
+                html.append("<b>");
+            }
+            if (isHttpUrl(line.link())) {
+                html.append("<a href=\"").append(escapeHtml(line.link())).append("\">")
+                        .append(escapeHtml(includedText)).append("</a>");
+            } else {
+                html.append(escapeHtml(includedText));
+            }
+            if (line.bold()) {
+                html.append("</b>");
+            }
+            remaining -= includedLength;
+            if (includedLength < lineLength) {
+                break;
+            }
+        }
+        return html.toString();
+    }
+
+    private void addLine(List<Line> lines, String text, String link, boolean bold) {
+        if (text != null && !text.isBlank()) {
+            lines.add(new Line(text, link, bold));
         }
     }
 
-    private String linkedValue(String value, String link) {
-        if (link == null || link.isBlank()) {
-            return escapeHtml(value);
-        }
-        return "<a href=\"" + escapeHtmlAttribute(link) + "\">" + escapeHtml(value) + "</a>";
+    private String prefixByCodePoints(String value, int length) {
+        return value.substring(0, value.offsetByCodePoints(0, length));
     }
 
-    private String truncate(String value, int maxCodePoints) {
-        if (value == null || maxCodePoints <= 0) {
-            return "";
+    private boolean isHttpUrl(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
         }
-        int length = value.codePointCount(0, value.length());
-        if (length <= maxCodePoints) {
-            return value;
+        try {
+            java.net.URI uri = java.net.URI.create(value);
+            return uri.getHost() != null
+                    && ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()));
+        } catch (IllegalArgumentException exception) {
+            return false;
         }
-        int end = value.offsetByCodePoints(0, maxCodePoints - 1);
-        return value.substring(0, end) + "…";
     }
 
     private String escapeHtml(String value) {
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 
-    private String escapeHtmlAttribute(String value) {
-        return escapeHtml(value).replace("\"", "&quot;");
+    private record Line(String text, String link, boolean bold) {
     }
 }

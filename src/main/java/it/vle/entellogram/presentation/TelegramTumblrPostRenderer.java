@@ -5,7 +5,7 @@ import it.vle.entellocore.model.ExtractedPostTumblr;
 
 import java.util.List;
 
-public final class TelegramTumblrPostRenderer implements TelegramPostRenderer {
+public class TelegramTumblrPostRenderer implements TelegramPostRenderer {
 
     @Override
     public boolean supports(ExtractedPost post) {
@@ -13,10 +13,14 @@ public final class TelegramTumblrPostRenderer implements TelegramPostRenderer {
     }
 
     @Override
-    public TelegramPostContent render(ExtractedPost post) {
+    public TelegramPostRenderer.Content render(ExtractedPost post) {
         ExtractedPostTumblr tumblr = (ExtractedPostTumblr) post;
-        return TelegramPostContent.withDetails("", List.of(
-                TelegramPostRendererSupport.field("Tags", TelegramPostRendererSupport.join(tumblr.getTags()))
-        ));
+        return TelegramPostRenderer.withDetails(
+                null,
+                List.of(TelegramPostRenderer.field(
+                        "Tags",
+                        TelegramPostRenderer.join(tumblr.getTags())
+                ))
+        );
     }
 }

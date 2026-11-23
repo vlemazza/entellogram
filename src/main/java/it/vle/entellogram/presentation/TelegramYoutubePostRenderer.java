@@ -5,7 +5,7 @@ import it.vle.entellocore.model.ExtractedPostYoutube;
 
 import java.util.List;
 
-public final class TelegramYoutubePostRenderer implements TelegramPostRenderer {
+public class TelegramYoutubePostRenderer implements TelegramPostRenderer {
 
     @Override
     public boolean supports(ExtractedPost post) {
@@ -13,12 +13,11 @@ public final class TelegramYoutubePostRenderer implements TelegramPostRenderer {
     }
 
     @Override
-    public TelegramPostContent render(ExtractedPost post) {
-        ExtractedPostYoutube youtube = (ExtractedPostYoutube) post;
-        String channel = youtube.getChannel();
-        if (channel == null || channel.isBlank()) {
-            channel = youtube.getAuthor();
-        }
-        return TelegramPostContent.withAuthor(youtube.getTitle(), channel, "Canale", List.of());
+    public TelegramPostRenderer.Content render(ExtractedPost post) {
+        ExtractedPostYoutube youtubePost = (ExtractedPostYoutube) post;
+        return TelegramPostRenderer.withDetails(
+                null,
+                List.of(TelegramPostRenderer.field("Channel", youtubePost.getChannel()))
+        );
     }
 }
