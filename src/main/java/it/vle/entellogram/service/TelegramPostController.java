@@ -90,11 +90,46 @@ public class TelegramPostController {
                         sendPost(chatId, messageId, success.post(), success.url());
                     } catch (Exception exception) {
                         LOGGER.log(Level.SEVERE, "Failed to send extracted post for URL: " + success.url(), exception);
+                        reportPostError(
+                                chatId,
+                                messageId,
+                                "Failed to send extracted post for URL: " + success.url(),
+                                exception
+                        );
                     }
                 }
-                case TextExtractionOutcome.Failure failure ->
-                        LOGGER.log(Level.WARNING, "Content extraction failed for URL: " + failure.url(), failure.exception());
+                case TextExtractionOutcome.Failure failure -> {
+                    LOGGER.log(Level.WARNING,
+                            "Content extraction failed for URL: " + failure.url(), failure.exception());
+                    reportPostError(
+                            chatId,
+                            messageId,
+                            "Content extraction failed for URL: " + failure.url(),
+                            failure.exception()
+                    );
+                }
             }
+        }
+    }
+
+    private void reportPostError(long chatId, int sourceMessageId, String context, Throwable exception) {
+        StringBuilder message = new StringBuilder(context);
+        Throwable cause = exception;
+        boolean first = true;
+        while (cause != null) {
+            message.append(first ? "\n" : "\nCaused by: ")
+                    .append(cause.getClass().getName());
+            if (cause.getMessage() != null && !cause.getMessage().isBlank()) {
+                message.append(": ").append(cause.getMessage());
+            }
+            cause = cause.getCause();
+            first = false;
+        }
+
+        try {
+            telegram.sendMessage(chatId, message.toString(), sourceMessageId);
+        } catch (IOException sendException) {
+            LOGGER.log(Level.WARNING, "Unable to send the post processing error to Telegram.", sendException);
         }
     }
 
