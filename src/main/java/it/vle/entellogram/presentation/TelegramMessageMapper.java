@@ -4,11 +4,10 @@ import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostPinterest;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class TelegramMessageMapper {
 
@@ -27,7 +26,8 @@ public final class TelegramMessageMapper {
                 new TelegramHackerNewsPostRenderer(),
                 new TelegramBlueskyPostRenderer(),
                 new TelegramYoutubePostRenderer(),
-                new TelegramTiktokPostRender()
+                new TelegramTiktokPostRender(),
+                new TelegramInstagramPostRender()
         ));
     }
 
@@ -70,38 +70,43 @@ public final class TelegramMessageMapper {
             int maxCodePoints
     ) {
         List<Line> lines = new ArrayList<>();
-        addLine(lines, presentation.title(), null, true, false);
 
         String author = presentation.authorText() == null ? post.getAuthor() : presentation.authorText();
         String text = presentation.text() == null ? post.getText() : presentation.text();
-        String authorLine = author;
-        if (authorLine != null && presentation.authorLabel() != null && !presentation.authorLabel().isBlank()) {
-            authorLine = presentation.authorLabel() + ": " + authorLine;
-        }
-        if (presentation.authorBeforeText()) {
-            addLine(lines, authorLine, presentation.authorLink(), false, false);
-            addLine(lines, text, null, false, true);
-        } else {
-            addLine(lines, text, null, false, true);
-            addLine(lines, authorLine, presentation.authorLink(), false, false);
+        if (text == null || text.isBlank()) {
+            text = post.getText();
         }
 
+        List<Segment> authorSegments = new ArrayList<>();
+        if (author != null && !author.isBlank()) {
+            String authorLine = presentation.authorLabel() == null || presentation.authorLabel().isBlank()
+                    ? author
+                    : presentation.authorLabel() + ": " + author;
+            authorSegments.add(new Segment(authorLine, presentation.authorLink()));
+        }
+        TelegramFooter footer = TelegramFooter.findFor(post);
+        if (footer != null) {
+            String socialName = authorSegments.isEmpty()
+                    ? footer.text()
+                    : " (" + footer.text() + ")";
+            authorSegments.add(new Segment(socialName, footer.linkUrl()));
+        }
+        addLine(lines, authorSegments, false, false);
+
+        addLine(lines, text, null, false, true);
+        addLine(lines, presentation.title(), null, true, false);
+
         for (TelegramPostRenderer.Field field : presentation.fields()) {
-            if (field == null) {
+            if (field == null || isMissingValue(field.value())) {
                 continue;
             }
-            String value = field.value() == null ? "" : field.value();
             String label = field.label() == null ? "" : field.label();
-            String fieldText = label.isBlank() ? value : label + ": " + value;
+            String fieldText = label.isBlank() ? field.value() : label + ": " + field.value();
             addLine(lines, fieldText, field.link(), false, false);
         }
 
-        TelegramFooter footer = TelegramFooter.findFor(post);
-        if (footer != null) {
-            addLine(lines, footer.text(), footer.linkUrl(), false, false);
-        }
         if (post.getTimestamp() != null) {
-            String timestamp = DateTimeFormatter.ofPattern("dd/MM/yyy HH:mm")
+            String timestamp = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                     .withZone(ZoneId.of("Europe/Rome")) // Change this to your preferred time zone.
                     .format(Instant.ofEpochSecond(post.getTimestamp()));
             addLine(lines, timestamp, null, false, false);
@@ -121,20 +126,29 @@ public final class TelegramMessageMapper {
                 remaining--;
             }
 
-            int lineLength = line.text().codePointCount(0, line.text().length());
+            int lineLength = line.codePointLength();
             int includedLength = Math.min(lineLength, remaining);
-            String includedText = prefixByCodePoints(line.text(), includedLength);
             if (line.quoted()) {
                 html.append("<blockquote>");
             }
             if (line.bold()) {
                 html.append("<b>");
             }
-            if (isHttpUrl(line.link())) {
-                html.append("<a href=\"").append(escapeHtml(line.link())).append("\">")
-                        .append(escapeHtml(includedText)).append("</a>");
-            } else {
-                html.append(escapeHtml(includedText));
+            int segmentRemaining = includedLength;
+            for (Segment segment : line.segments()) {
+                if (segmentRemaining <= 0) {
+                    break;
+                }
+                int segmentLength = segment.text().codePointCount(0, segment.text().length());
+                int segmentIncludedLength = Math.min(segmentLength, segmentRemaining);
+                String includedText = prefixByCodePoints(segment.text(), segmentIncludedLength);
+                if (isHttpUrl(segment.url())) {
+                    html.append("<a href=\"").append(escapeHtml(segment.url())).append("\">")
+                            .append(escapeHtml(includedText)).append("</a>");
+                } else {
+                    html.append(escapeHtml(includedText));
+                }
+                segmentRemaining -= segmentIncludedLength;
             }
             if (line.bold()) {
                 html.append("</b>");
@@ -152,7 +166,16 @@ public final class TelegramMessageMapper {
 
     private void addLine(List<Line> lines, String text, String link, boolean bold, boolean quoted) {
         if (text != null && !text.isBlank()) {
-            lines.add(new Line(text, link, bold, quoted));
+            lines.add(new Line(List.of(new Segment(text, link)), bold, quoted));
+        }
+    }
+
+    private void addLine(List<Line> lines, List<Segment> segments, boolean bold, boolean quoted) {
+        List<Segment> nonBlankSegments = segments.stream()
+                .filter(segment -> segment.text() != null && !segment.text().isBlank())
+                .toList();
+        if (!nonBlankSegments.isEmpty()) {
+            lines.add(new Line(nonBlankSegments, bold, quoted));
         }
     }
 
@@ -180,6 +203,18 @@ public final class TelegramMessageMapper {
                 .replace("\"", "&quot;");
     }
 
-    private record Line(String text, String link, boolean bold, boolean quoted) {
+    private boolean isMissingValue(String value) {
+        return value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim());
+    }
+
+    private record Segment(String text, String url) {
+    }
+
+    private record Line(List<Segment> segments, boolean bold, boolean quoted) {
+        private int codePointLength() {
+            return segments.stream()
+                    .mapToInt(segment -> segment.text().codePointCount(0, segment.text().length()))
+                    .sum();
+        }
     }
 }
