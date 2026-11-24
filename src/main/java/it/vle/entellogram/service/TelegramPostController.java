@@ -57,40 +57,62 @@ public class TelegramPostController {
             return;
         }
 
-        List<TextExtractionOutcome> outcomes;
-        try {
-            outcomes = extractionEngine.extractFromText(rawMessage);
-        } catch (RuntimeException exception) {
-            LOGGER.log(Level.SEVERE, "Unexpected error processing Telegram message.", exception);
+        if (!extractionEngine.hasSupportedUrls(rawMessage)) {
             return;
         }
 
-        for (TextExtractionOutcome outcome : outcomes) {
-            switch (outcome) {
-                case TextExtractionOutcome.Success success -> {
-                    try {
-                        sendPost(chatId, messageId, success.post(), success.url());
-                    } catch (Exception exception) {
-                        LOGGER.log(Level.SEVERE, "Failed to send extracted post for URL: " + success.url(), exception);
+        int acknowledgementId;
+        try {
+            acknowledgementId = telegram.sendMessage(
+                    chatId, randomReplies.randomReply(), messageId
+            );
+        } catch (IOException exception) {
+            LOGGER.log(Level.SEVERE, "Unable to send the download acknowledgement.", exception);
+            return;
+        }
+
+        DownloadAcknowledgement acknowledgement =
+                new DownloadAcknowledgement(chatId, acknowledgementId);
+        try {
+            List<TextExtractionOutcome> outcomes;
+            try {
+                outcomes = extractionEngine.extractFromText(rawMessage);
+            } catch (RuntimeException exception) {
+                LOGGER.log(Level.SEVERE, "Unexpected error processing Telegram message.", exception);
+                return;
+            }
+
+            for (TextExtractionOutcome outcome : outcomes) {
+                switch (outcome) {
+                    case TextExtractionOutcome.Success success -> {
+                        try {
+                            sendPost(chatId, messageId, success.post(), success.url(), acknowledgement);
+                        } catch (Exception exception) {
+                            acknowledgement.delete();
+                            LOGGER.log(Level.SEVERE, "Failed to send extracted post for URL: " + success.url(), exception);
+                            reportPostError(
+                                    chatId,
+                                    messageId,
+                                    "Failed to send extracted post for URL: " + success.url(),
+                                    exception
+                            );
+                        }
+                    }
+                    case TextExtractionOutcome.Failure failure -> {
+                        acknowledgement.delete();
+                        LOGGER.log(Level.WARNING,
+                                "Content extraction failed for URL: " + failure.url(), failure.exception());
                         reportPostError(
                                 chatId,
                                 messageId,
-                                "Failed to send extracted post for URL: " + success.url(),
-                                exception
+                                "Content extraction failed for URL: " + failure.url(),
+                                failure.exception()
                         );
                     }
                 }
-                case TextExtractionOutcome.Failure failure -> {
-                    LOGGER.log(Level.WARNING,
-                            "Content extraction failed for URL: " + failure.url(), failure.exception());
-                    reportPostError(
-                            chatId,
-                            messageId,
-                            "Content extraction failed for URL: " + failure.url(),
-                            failure.exception()
-                    );
-                }
             }
+        } finally {
+            acknowledgement.delete();
         }
     }
 
@@ -115,34 +137,55 @@ public class TelegramPostController {
         }
     }
 
-    private void sendPost(long chatId, int sourceMessageId, ExtractedPost post, String sourceUrl) throws IOException {
+    private void sendPost(
+            long chatId,
+            int sourceMessageId,
+            ExtractedPost post,
+            String sourceUrl,
+            DownloadAcknowledgement acknowledgement
+    ) throws IOException {
         try {
             TelegramPostRenderer.Content presentation = messageMapper.prepare(post, sourceUrl);
             TelegramMediaSender.PreparedMedia media = mediaSender.prepare(post, sourceUrl, presentation);
 
-            int temporaryReplyId = telegram.sendMessage(chatId, randomReplies.randomReply(), sourceMessageId);
-            try {
-                String textPost = media.hasCaptionMedia()
-                        ? ""
-                        : messageMapper.formatText(post, sourceUrl, presentation);
-                if (!textPost.isBlank()) {
-                    telegram.sendHtmlMessage(chatId, textPost);
-                }
-            } finally {
-                deleteTemporaryReply(chatId, temporaryReplyId);
+            String textPost = media.hasCaptionMedia()
+                    ? ""
+                    : messageMapper.formatText(post, sourceUrl, presentation);
+            acknowledgement.delete();
+            if (!textPost.isBlank()) {
+                telegram.sendHtmlMessage(chatId, textPost);
             }
 
-            mediaSender.send(chatId, media);
+            mediaSender.send(chatId, media, sourceMessageId);
         } finally {
             closePost(post);
         }
     }
 
-    private void deleteTemporaryReply(long chatId, int messageId) {
+    private void deleteAcknowledgement(long chatId, int messageId) {
         try {
             telegram.deleteMessage(chatId, messageId);
         } catch (IOException exception) {
-            LOGGER.log(Level.WARNING, "Unable to remove the temporary Telegram reply before sending media.", exception);
+            LOGGER.log(Level.WARNING, "Unable to remove the Telegram download acknowledgement.", exception);
+        }
+    }
+
+    private final class DownloadAcknowledgement {
+
+        private final long chatId;
+        private final int messageId;
+        private boolean deleted;
+
+        private DownloadAcknowledgement(long chatId, int messageId) {
+            this.chatId = chatId;
+            this.messageId = messageId;
+        }
+
+        private void delete() {
+            if (!deleted) {
+                deleted = true;
+                deleteAcknowledgement(chatId, messageId);
+            }
         }
     }
 

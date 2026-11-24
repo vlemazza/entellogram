@@ -52,20 +52,24 @@ public final class TelegramMediaSender {
     }
 
     public void send(long chatId, PreparedMedia prepared) throws IOException {
+        send(chatId, prepared, null);
+    }
+
+    public void send(long chatId, PreparedMedia prepared, Integer replyToMessageId) throws IOException {
         List<Path> media = prepared.files();
         if (media.isEmpty()) {
             return;
         }
         if (media.size() > 1 && canSendAsMediaGroup(media)) {
-            telegram.sendMediaGroup(chatId, media, prepared.caption());
+            telegram.sendMediaGroup(chatId, media, prepared.caption(), replyToMessageId);
             return;
         }
 
         for (Path file : media) {
             if (file.equals(prepared.captionMedia())) {
-                telegram.sendFile(chatId, file, prepared.caption());
+                telegram.sendFile(chatId, file, prepared.caption(), replyToMessageId);
             } else {
-                telegram.sendFile(chatId, file);
+                telegram.sendFile(chatId, file, null, replyToMessageId);
             }
         }
     }

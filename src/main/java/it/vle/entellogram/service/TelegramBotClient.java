@@ -79,11 +79,16 @@ public class TelegramBotClient implements AutoCloseable {
 
     /** Selects the Telegram method based on the detected file type. */
     public void sendFile(long chatId, Path path) throws IOException {
-        sendFile(chatId, path, null);
+        sendFile(chatId, path, null, null);
     }
 
     /** Sends a file with an HTML caption to keep the description and video in the same message. */
     public void sendFile(long chatId, Path path, String caption) throws IOException {
+        sendFile(chatId, path, caption, null);
+    }
+
+    /** Sends a file as a reply to the message that triggered the download. */
+    public void sendFile(long chatId, Path path, String caption, Integer replyToMessageId) throws IOException {
         File file = path.toFile();
         TelegramMediaType mediaType = TelegramMediaType.from(path);
         SendResponse response;
@@ -92,27 +97,47 @@ public class TelegramBotClient implements AutoCloseable {
             if (caption != null && !caption.isBlank()) {
                 request.caption(caption).parseMode(ParseMode.HTML);
             }
+            if (replyToMessageId != null) {
+                request.replyParameters(new ReplyParameters(replyToMessageId));
+            }
             response = bot.execute(request);
         } else if (mediaType == TelegramMediaType.VIDEO || caption != null) {
             SendVideo request = new SendVideo(chatId, file);
             if (caption != null && !caption.isBlank()) {
                 request.caption(caption).parseMode(ParseMode.HTML);
             }
+            if (replyToMessageId != null) {
+                request.replyParameters(new ReplyParameters(replyToMessageId));
+            }
             response = bot.execute(request);
         } else {
-            response = bot.execute(new SendDocument(chatId, file));
+            SendDocument request = new SendDocument(chatId, file);
+            if (replyToMessageId != null) {
+                request.replyParameters(new ReplyParameters(replyToMessageId));
+            }
+            response = bot.execute(request);
         }
         ensureOk(response);
     }
 
     /** Sends photos and videos as Telegram albums, splitting them into groups of up to ten. */
     public void sendMediaGroup(long chatId, List<Path> paths, String caption) throws IOException {
+        sendMediaGroup(chatId, paths, caption, null);
+    }
+
+    /** Sends each album as a reply to the message that triggered the download. */
+    public void sendMediaGroup(
+            long chatId,
+            List<Path> paths,
+            String caption,
+            Integer replyToMessageId
+    ) throws IOException {
         for (int start = 0; start < paths.size(); start += 10) {
             List<Path> group = paths.subList(start, Math.min(start + 10, paths.size()));
             String groupCaption = start == 0 ? caption : null;
 
             if (group.size() == 1) {
-                sendFile(chatId, group.getFirst(), groupCaption);
+                sendFile(chatId, group.getFirst(), groupCaption, replyToMessageId);
                 continue;
             }
 
@@ -136,7 +161,11 @@ public class TelegramBotClient implements AutoCloseable {
                 media.add(item);
             }
 
-            MessagesResponse response = bot.execute(new SendMediaGroup(chatId, media.toArray(InputMedia[]::new)));
+            SendMediaGroup request = new SendMediaGroup(chatId, media.toArray(InputMedia[]::new));
+            if (replyToMessageId != null) {
+                request.replyParameters(new ReplyParameters(replyToMessageId));
+            }
+            MessagesResponse response = bot.execute(request);
             ensureOk(response);
         }
     }
