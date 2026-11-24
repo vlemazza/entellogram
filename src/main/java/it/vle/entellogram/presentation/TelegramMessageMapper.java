@@ -26,8 +26,7 @@ public final class TelegramMessageMapper {
                 new TelegramTumblrPostRenderer(),
                 new TelegramHackerNewsPostRenderer(),
                 new TelegramBlueskyPostRenderer(),
-                new TelegramYoutubePostRenderer(),
-                new TelegramTiktokPostRender()
+                new TelegramYoutubePostRenderer()
         ));
     }
 
