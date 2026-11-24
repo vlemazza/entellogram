@@ -13,20 +13,20 @@ public class TelegramUpdateListener {
     }
 
     public void onUpdate(Update update) {
-        // Gli aggiornamenti diversi dai messaggi (ad esempio callback o query inline) non servono al bot.
+        // Ignore updates other than messages (for example, callback or inline queries).
         Message message = update.message();
         if (message == null || message.chat() == null) {
             return;
         }
 
-        // Ignora gli altri bot per evitare risposte ricorsive.
+        // Ignore other bots to prevent recursive replies.
         if (message.from() != null && Boolean.TRUE.equals(message.from().isBot())) {
             return;
         }
 
         long chatId = message.chat().id();
         int messageId = message.messageId();
-        // I link possono arrivare sia nel testo sia nella didascalia di un contenuto.
+        // Links may appear in either the message text or its caption.
         String text = message.text();
         if (text == null || text.isBlank()) {
             text = message.caption();

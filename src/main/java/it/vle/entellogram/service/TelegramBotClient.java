@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Adattatore tra le operazioni usate da entellogram e la libreria Pengrad. */
+/** Adapter between EntelloGram operations and the Pengrad library. */
 public class TelegramBotClient implements AutoCloseable {
 
     private final TelegramBot bot;
@@ -38,7 +38,7 @@ public class TelegramBotClient implements AutoCloseable {
         bot.setUpdatesListener(listener, exceptionHandler);
     }
 
-    /** Invia il testo, dividendolo in messaggi che rispettano il limite Telegram. */
+    /** Sends text in chunks that respect Telegram's message limit. */
 
     public int sendMessage(long chatId, String text, Integer replyToMessageId) throws IOException {
         int start = 0;
@@ -60,7 +60,7 @@ public class TelegramBotClient implements AutoCloseable {
         return lastMessageId;
     }
 
-    /** Invia un singolo messaggio HTML, usato per le citazioni e i dettagli dei post testuali. */
+    /** Sends a single HTML message, used for quotes and text-post details. */
     public void sendHtmlMessage(long chatId, String html) throws IOException {
         SendMessage request = new SendMessage(chatId, html).parseMode(ParseMode.HTML);
         ensureOk(bot.execute(request));
@@ -70,19 +70,19 @@ public class TelegramBotClient implements AutoCloseable {
         ensureOk(bot.execute(new DeleteMessage(chatId, messageId)));
     }
 
-    /** Invia un audio come risposta al messaggio che ha attivato il meme. */
+    /** Sends audio as a reply to the message that triggered the meme. */
     public void sendAudio(long chatId, Path path, int replyToMessageId) throws IOException {
         SendAudio request = new SendAudio(chatId, path.toFile())
                 .replyParameters(new ReplyParameters(replyToMessageId));
         ensureOk(bot.execute(request));
     }
 
-    /** Sceglie il metodo Telegram in base al tipo di file riconosciuto dal sistema. */
+    /** Selects the Telegram method based on the detected file type. */
     public void sendFile(long chatId, Path path) throws IOException {
         sendFile(chatId, path, null);
     }
 
-    /** Invia un file con didascalia HTML, usata per tenere descrizione e video nello stesso messaggio. */
+    /** Sends a file with an HTML caption to keep the description and video in the same message. */
     public void sendFile(long chatId, Path path, String caption) throws IOException {
         File file = path.toFile();
         TelegramMediaType mediaType = TelegramMediaType.from(path);
@@ -105,7 +105,7 @@ public class TelegramBotClient implements AutoCloseable {
         ensureOk(response);
     }
 
-    /** Invia foto e video come album Telegram, dividendoli in gruppi da massimo dieci. */
+    /** Sends photos and videos as Telegram albums, splitting them into groups of up to ten. */
     public void sendMediaGroup(long chatId, List<Path> paths, String caption) throws IOException {
         for (int start = 0; start < paths.size(); start += 10) {
             List<Path> group = paths.subList(start, Math.min(start + 10, paths.size()));
@@ -142,7 +142,7 @@ public class TelegramBotClient implements AutoCloseable {
     }
 
     private void ensureOk(BaseResponse response) throws IOException {
-        // Pengrad restituisce una risposta anche per gli errori HTTP di Telegram.
+        // Pengrad returns a response even for Telegram HTTP errors.
         if (response == null || !response.isOk()) {
             String description = response == null ? "Empty response from Telegram" : response.description();
             throw new IOException("Telegram Bot API request failed: " + description);

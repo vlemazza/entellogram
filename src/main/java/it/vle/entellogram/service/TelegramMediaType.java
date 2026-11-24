@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
-/** Classifica i file multimediali in base al MIME type o all'estensione. */
+/** Classifies media files by MIME type or extension. */
 enum TelegramMediaType {
     PHOTO,
     VIDEO,

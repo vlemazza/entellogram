@@ -1,4 +1,4 @@
-# File audio .opus in entellogram/audio; filename|trigger,trigger,trigger
+# .opus audio files in entellogram/audio; filename|trigger,trigger,trigger
 banana.opus|🍌,banana,banan
 india.opus|🇮🇳,india,dosti
 captain.opus|captain,capitano

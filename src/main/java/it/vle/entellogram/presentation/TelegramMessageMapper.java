@@ -7,6 +7,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 public final class TelegramMessageMapper {
 
     private static final int MAX_MESSAGE_CODE_POINTS = 4_096;
@@ -66,7 +69,7 @@ public final class TelegramMessageMapper {
             int maxCodePoints
     ) {
         List<Line> lines = new ArrayList<>();
-        addLine(lines, presentation.title(), null, true);
+        addLine(lines, presentation.title(), null, true, false);
 
         String author = presentation.authorText() == null ? post.getAuthor() : presentation.authorText();
         String text = presentation.text() == null ? post.getText() : presentation.text();
@@ -75,11 +78,11 @@ public final class TelegramMessageMapper {
             authorLine = presentation.authorLabel() + ": " + authorLine;
         }
         if (presentation.authorBeforeText()) {
-            addLine(lines, authorLine, presentation.authorLink(), false);
-            addLine(lines, text, null, false);
+            addLine(lines, authorLine, presentation.authorLink(), false, false);
+            addLine(lines, text, null, false, true);
         } else {
-            addLine(lines, text, null, false);
-            addLine(lines, authorLine, presentation.authorLink(), false);
+            addLine(lines, text, null, false, true);
+            addLine(lines, authorLine, presentation.authorLink(), false, false);
         }
 
         for (TelegramPostRenderer.Field field : presentation.fields()) {
@@ -89,18 +92,21 @@ public final class TelegramMessageMapper {
             String value = field.value() == null ? "" : field.value();
             String label = field.label() == null ? "" : field.label();
             String fieldText = label.isBlank() ? value : label + ": " + value;
-            addLine(lines, fieldText, field.link(), false);
+            addLine(lines, fieldText, field.link(), false, false);
         }
 
         TelegramFooter footer = TelegramFooter.findFor(post);
         if (footer != null) {
-            addLine(lines, footer.text(), null, false);
+            addLine(lines, footer.text(), footer.linkUrl(), false, false);
         }
         if (post.getTimestamp() != null) {
-            addLine(lines, Instant.ofEpochSecond(post.getTimestamp()).toString(), null, false);
+            String timestamp = DateTimeFormatter.ofPattern("dd/MM/yyy HH:mm")
+                    .withZone(ZoneId.of("Europe/Rome")) // Change this to your preferred time zone.
+                    .format(Instant.ofEpochSecond(post.getTimestamp()));
+            addLine(lines, timestamp, null, false, false);
         }
         if (sourceUrl != null && !sourceUrl.isBlank()) {
-            addLine(lines, "Source", sourceUrl, false);
+            addLine(lines, "Source", sourceUrl, false, false);
         }
 
         StringBuilder html = new StringBuilder();
@@ -117,6 +123,9 @@ public final class TelegramMessageMapper {
             int lineLength = line.text().codePointCount(0, line.text().length());
             int includedLength = Math.min(lineLength, remaining);
             String includedText = prefixByCodePoints(line.text(), includedLength);
+            if (line.quoted()) {
+                html.append("<blockquote>");
+            }
             if (line.bold()) {
                 html.append("<b>");
             }
@@ -129,6 +138,9 @@ public final class TelegramMessageMapper {
             if (line.bold()) {
                 html.append("</b>");
             }
+            if (line.quoted()) {
+                html.append("</blockquote>");
+            }
             remaining -= includedLength;
             if (includedLength < lineLength) {
                 break;
@@ -137,9 +149,9 @@ public final class TelegramMessageMapper {
         return html.toString();
     }
 
-    private void addLine(List<Line> lines, String text, String link, boolean bold) {
+    private void addLine(List<Line> lines, String text, String link, boolean bold, boolean quoted) {
         if (text != null && !text.isBlank()) {
-            lines.add(new Line(text, link, bold));
+            lines.add(new Line(text, link, bold, quoted));
         }
     }
 
@@ -167,6 +179,6 @@ public final class TelegramMessageMapper {
                 .replace("\"", "&quot;");
     }
 
-    private record Line(String text, String link, boolean bold) {
+    private record Line(String text, String link, boolean bold, boolean quoted) {
     }
 }

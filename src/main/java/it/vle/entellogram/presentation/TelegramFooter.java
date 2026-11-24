@@ -4,38 +4,38 @@ import it.vle.entellocore.model.*;
 
 import java.util.Map;
 
-record TelegramFooter(String text, String iconUrl) {
+record TelegramFooter(String text, String linkUrl) {
 
     private static final Map<Class<? extends ExtractedPost>, TelegramFooter> FOOTERS =
             Map.ofEntries(
                     Map.entry(ExtractedPostTwitter.class,
-                            new TelegramFooter("Twitter", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/twitter.png")),
+                            new TelegramFooter("Twitter", "https://x.com/home")),
                     Map.entry(ExtractedPostFacebook.class,
-                            new TelegramFooter("Facebook", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/facebook.png")),
+                            new TelegramFooter("Facebook", "https://www.facebook.com/")),
                     Map.entry(ExtractedPostBluesky.class,
-                            new TelegramFooter("Bluesky", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/bluesky.png")),
+                            new TelegramFooter("Bluesky", "https://bsky.app/")),
                     Map.entry(ExtractedPostTiktok.class,
-                            new TelegramFooter("TikTok", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/tiktok.png")),
+                            new TelegramFooter("TikTok", "https://www.tiktok.com")),
                     Map.entry(ExtractedPostInstagram.class,
-                            new TelegramFooter("Instagram", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/instagram.png")),
+                            new TelegramFooter("Instagram", "https://www.instagram.com/")),
                     Map.entry(ExtractedPostReddit.class,
-                            new TelegramFooter("Reddit", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/reddit.png")),
+                            new TelegramFooter("Reddit", "https://www.reddit.com/")),
                     Map.entry(ExtractedPostBilibili.class,
-                            new TelegramFooter("Bilibili", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/bilibili.png")),
+                            new TelegramFooter("Bilibili", "https://www.bilibili.tv/")),
                     Map.entry(ExtractedPostPixiv.class,
-                            new TelegramFooter("Pixiv", "https://upload.wikimedia.org/wikipedia/commons/e/ed/Pixiv.png")),
+                            new TelegramFooter("Pixiv", "https://www.pixiv.net/")),
                     Map.entry(ExtractedPostAO3.class,
-                            new TelegramFooter("Archive of Our Own", "https://archiveofourown.org/images/ao3_logos/logo_42.png")),
+                            new TelegramFooter("Archive of Our Own", "https://archiveofourown.org/")),
                     Map.entry(ExtractedPostPoipiku.class,
-                            new TelegramFooter("Poipiku", "https://cdn.poipiku.com/assets/img/pc_top_title-03.png")),
+                            new TelegramFooter("Poipiku", "https://poipiku.com/")),
                     Map.entry(ExtractedPostTumblr.class,
-                            new TelegramFooter("Tumblr", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/tumblr.png")),
+                            new TelegramFooter("Tumblr", "https://www.tumblr.com/")),
                     Map.entry(ExtractedPostPinterest.class,
-                            new TelegramFooter("Pinterest", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/pinterest.png")),
+                            new TelegramFooter("Pinterest", "https://pinterest.com/")),
                     Map.entry(ExtractedPostHackerNews.class,
-                            new TelegramFooter("Hacker News", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/hacker-news.png")),
+                            new TelegramFooter("Hacker News", "https://news.ycombinator.com/")),
                     Map.entry(ExtractedPostYoutube.class,
-                            new TelegramFooter("YouTube", "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/youtube.png"))
+                            new TelegramFooter("YouTube", "https://www.youtube.com/"))
             );
 
     static TelegramFooter findFor(ExtractedPost post) {

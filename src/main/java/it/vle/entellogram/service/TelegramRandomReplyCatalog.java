@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Carica e seleziona le risposte testuali casuali del bot. */
+/** Loads and selects random text replies for the bot. */
 public class TelegramRandomReplyCatalog {
 
     private final List<String> randomReplies;
@@ -16,7 +16,7 @@ public class TelegramRandomReplyCatalog {
         this.randomReplies = readRandomReplies(randomRepliesFile);
     }
 
-    /** Sceglie una frase tra le righe valide di random-replies.txt. */
+    /** Selects a phrase from the valid lines in random-replies.txt. */
     public String randomReply() {
         String reply = randomReplies.get(ThreadLocalRandom.current().nextInt(randomReplies.size()));
         if (reply.contains("{rand1}")) {

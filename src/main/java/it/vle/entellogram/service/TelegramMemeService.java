@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Gestisce trigger, cooldown e invio dei meme audio. */
+/** Handles meme triggers, cooldowns, and audio delivery. */
 public final class TelegramMemeService {
 
     private static final Logger LOGGER = Logger.getLogger(TelegramMemeService.class.getName());
@@ -33,7 +33,7 @@ public final class TelegramMemeService {
         this.cooldownNanos = readCooldownNanos();
     }
 
-    /** Gestisce il messaggio se contiene un trigger meme. */
+    /** Handles the message if it contains a meme trigger. */
     public boolean handleIfTriggered(String input, long chatId, int sourceMessageId) {
         if (input == null || input.isBlank()) {
             return false;

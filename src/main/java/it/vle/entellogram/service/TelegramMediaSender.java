@@ -13,7 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
-/** Prepara e invia i media di un post rispettando album, caption e ordine dei file. */
+/** Prepares and sends post media while preserving albums, captions, and file order. */
 public final class TelegramMediaSender {
 
     private static final Logger LOGGER = Logger.getLogger(TelegramMediaSender.class.getName());
@@ -88,7 +88,7 @@ public final class TelegramMediaSender {
         return true;
     }
 
-    /** Riordina per indice solo quando ogni file espone un indice finale esplicito. */
+    /** Sorts by index only when every file has an explicit trailing index. */
     private List<Path> orderMedia(List<Path> originalMedia) {
         if (originalMedia == null || originalMedia.size() < 2) {
             return originalMedia == null ? List.of() : List.copyOf(originalMedia);

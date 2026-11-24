@@ -64,7 +64,7 @@ public class Main {
         CountDownLatch stopped = new CountDownLatch(1);
 
         LOGGER.info("Telegram bot is running. Press Ctrl+C to stop.");
-        // Pengrad esegue long polling e conferma gli aggiornamenti dopo averli consegnati al listener.
+        // Pengrad uses long polling and confirms updates after delivering them to the listener.
         telegram.setUpdatesListener(updates -> {
             updates.forEach(listener::onUpdate);
             return UpdatesListener.CONFIRMED_UPDATES_ALL;

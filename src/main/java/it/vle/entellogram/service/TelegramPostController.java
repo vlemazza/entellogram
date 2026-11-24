@@ -13,7 +13,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Coordina trigger, estrazione dei post e invio delle risposte nella chat Telegram. */
+/** Coordinates triggers, post extraction, and replies in Telegram chats. */
 public class TelegramPostController {
 
     private static final Logger LOGGER = Logger.getLogger(TelegramPostController.class.getName());
