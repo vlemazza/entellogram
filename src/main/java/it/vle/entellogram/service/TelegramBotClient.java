@@ -3,6 +3,7 @@ package it.vle.entellogram.service;
 import com.pengrad.telegrambot.ExceptionHandler;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.model.request.InputMedia;
@@ -48,7 +49,8 @@ public class TelegramBotClient implements AutoCloseable {
             int end = Math.min(start + 4_000, length);
             int startIndex = text.offsetByCodePoints(0, start);
             int endIndex = text.offsetByCodePoints(0, end);
-            SendMessage request = new SendMessage(chatId, text.substring(startIndex, endIndex));
+            SendMessage request = new SendMessage(chatId, text.substring(startIndex, endIndex))
+                    .disableNotification(true);
             if (replyToMessageId != null) {
                 request.replyParameters(new ReplyParameters(replyToMessageId));
             }
@@ -62,7 +64,10 @@ public class TelegramBotClient implements AutoCloseable {
 
     /** Sends a single HTML message, used for quotes and text-post details. */
     public void sendHtmlMessage(long chatId, String html) throws IOException {
-        SendMessage request = new SendMessage(chatId, html).parseMode(ParseMode.HTML);
+        SendMessage request = new SendMessage(chatId, html)
+                .parseMode(ParseMode.HTML)
+                .linkPreviewOptions(new LinkPreviewOptions().isDisabled(true))
+                .disableNotification(true);
         ensureOk(bot.execute(request));
     }
 
@@ -73,18 +78,9 @@ public class TelegramBotClient implements AutoCloseable {
     /** Sends audio as a reply to the message that triggered the meme. */
     public void sendAudio(long chatId, Path path, int replyToMessageId) throws IOException {
         SendAudio request = new SendAudio(chatId, path.toFile())
-                .replyParameters(new ReplyParameters(replyToMessageId));
+                .replyParameters(new ReplyParameters(replyToMessageId))
+                .disableNotification(true);
         ensureOk(bot.execute(request));
-    }
-
-    /** Selects the Telegram method based on the detected file type. */
-    public void sendFile(long chatId, Path path) throws IOException {
-        sendFile(chatId, path, null, null);
-    }
-
-    /** Sends a file with an HTML caption to keep the description and video in the same message. */
-    public void sendFile(long chatId, Path path, String caption) throws IOException {
-        sendFile(chatId, path, caption, null);
     }
 
     /** Sends a file as a reply to the message that triggered the download. */
@@ -93,7 +89,8 @@ public class TelegramBotClient implements AutoCloseable {
         TelegramMediaType mediaType = TelegramMediaType.from(path);
         SendResponse response;
         if (mediaType == TelegramMediaType.PHOTO) {
-            SendPhoto request = new SendPhoto(chatId, file);
+            SendPhoto request = new SendPhoto(chatId, file)
+                    .disableNotification(true);
             if (caption != null && !caption.isBlank()) {
                 request.caption(caption).parseMode(ParseMode.HTML);
             }
@@ -102,7 +99,8 @@ public class TelegramBotClient implements AutoCloseable {
             }
             response = bot.execute(request);
         } else if (mediaType == TelegramMediaType.VIDEO || caption != null) {
-            SendVideo request = new SendVideo(chatId, file);
+            SendVideo request = new SendVideo(chatId, file)
+                    .disableNotification(true);
             if (caption != null && !caption.isBlank()) {
                 request.caption(caption).parseMode(ParseMode.HTML);
             }
@@ -111,18 +109,14 @@ public class TelegramBotClient implements AutoCloseable {
             }
             response = bot.execute(request);
         } else {
-            SendDocument request = new SendDocument(chatId, file);
+            SendDocument request = new SendDocument(chatId, file)
+                    .disableNotification(true);
             if (replyToMessageId != null) {
                 request.replyParameters(new ReplyParameters(replyToMessageId));
             }
             response = bot.execute(request);
         }
         ensureOk(response);
-    }
-
-    /** Sends photos and videos as Telegram albums, splitting them into groups of up to ten. */
-    public void sendMediaGroup(long chatId, List<Path> paths, String caption) throws IOException {
-        sendMediaGroup(chatId, paths, caption, null);
     }
 
     /** Sends each album as a reply to the message that triggered the download. */
@@ -161,7 +155,8 @@ public class TelegramBotClient implements AutoCloseable {
                 media.add(item);
             }
 
-            SendMediaGroup request = new SendMediaGroup(chatId, media.toArray(InputMedia[]::new));
+            SendMediaGroup request = new SendMediaGroup(chatId, media.toArray(InputMedia[]::new))
+                    .disableNotification(true);
             if (replyToMessageId != null) {
                 request.replyParameters(new ReplyParameters(replyToMessageId));
             }
