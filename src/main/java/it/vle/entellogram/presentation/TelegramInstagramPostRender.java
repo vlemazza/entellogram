@@ -19,7 +19,7 @@ public class TelegramInstagramPostRender implements TelegramPostRenderer {
 
 
         return new TelegramPostRenderer.Content(
-                null, instagram.getText(), instagram.getAuthor(), null, instagram.getUrlProfile(), false, null
+                null, instagram.getText(), instagram.getAuthor(), null, instagram.getUrlProfile(), false, null, false
         );
     }
 }

@@ -29,7 +29,7 @@ public class TelegramBlueskyPostRenderer implements TelegramPostRenderer {
         fields.add(TelegramPostRenderer.field("Reply", bluesky.getReplyCount()));
         fields.add(TelegramPostRenderer.field("Repost", bluesky.getRepostCount()));
         fields.add(TelegramPostRenderer.field("Like", bluesky.getLikeCount()));
-        return new TelegramPostRenderer.Content(null, null, bluesky.getAuthor(), null, null, true, fields);
+        return new TelegramPostRenderer.Content(null, null, bluesky.getAuthor(), null, null, true, fields, false);
     }
 
     private String quote(String author, String text) {

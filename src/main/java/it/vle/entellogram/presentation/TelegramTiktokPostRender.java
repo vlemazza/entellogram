@@ -19,7 +19,7 @@ public class TelegramTiktokPostRender implements TelegramPostRenderer {
 
 
         return new TelegramPostRenderer.Content(
-                null, tiktok.getText(), tiktok.getAuthor(), null, tiktok.getUrlProfile(), false, null
+                null, tiktok.getText(), tiktok.getAuthor(), null, tiktok.getUrlProfile(), false, null, false
         );
     }
 }

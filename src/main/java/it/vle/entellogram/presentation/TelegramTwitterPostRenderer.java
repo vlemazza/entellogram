@@ -31,7 +31,8 @@ public class TelegramTwitterPostRenderer implements TelegramPostRenderer {
                 null,
                 twitter.getUrlProfile(),
                 true,
-                fields
+                fields,
+                false
         );
     }
 

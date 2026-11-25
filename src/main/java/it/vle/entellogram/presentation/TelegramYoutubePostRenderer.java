@@ -17,7 +17,7 @@ public class TelegramYoutubePostRenderer implements TelegramPostRenderer {
         ExtractedPostYoutube youtubePost = (ExtractedPostYoutube) post;
         return TelegramPostRenderer.withDetails(
                 null,
-                List.of(TelegramPostRenderer.field("Channel", youtubePost.getChannel()))
+                List.of(TelegramPostRenderer.link("Channel", youtubePost.getChannel(), youtubePost.getChannelUrl()))
         );
     }
 }

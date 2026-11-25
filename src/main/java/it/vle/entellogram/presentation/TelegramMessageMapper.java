@@ -49,7 +49,8 @@ public final class TelegramMessageMapper {
                     rendered.authorLabel(),
                     rendered.authorLink(),
                     rendered.authorBeforeText(),
-                    rendered.fields()
+                    rendered.fields(),
+                    false
             );
         }
         return rendered;
@@ -91,10 +92,17 @@ public final class TelegramMessageMapper {
                     : " (" + footer.text() + ")";
             authorSegments.add(new Segment(socialName, footer.linkUrl()));
         }
-        addLine(lines, authorSegments, false, false);
 
+        if (presentation.titleFirst()) {
+            addLine(lines, presentation.title(), null, true, false);
+        }
+
+        addLine(lines, authorSegments, false, false);
         addLine(lines, text, null, false, true);
-        addLine(lines, presentation.title(), null, true, false);
+
+        if (!presentation.titleFirst()) {
+            addLine(lines, presentation.title(), null, true, false);
+        }
 
         for (TelegramPostRenderer.Field field : presentation.fields()) {
             if (field == null || isMissingValue(field.value())) {
