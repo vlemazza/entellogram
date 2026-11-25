@@ -11,6 +11,14 @@ public final class ConfigValidator {
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("Missing TELEGRAM_BOT_TOKEN");
         }
+        String randomReplies = System.getenv("RANDOM_REPLIES");
+        if (randomReplies == null || randomReplies.isBlank()) {
+            throw new IllegalStateException("Missing RANDOM_REPLIES ");
+        }
+        String memeText = System.getenv("MEME_TEXT");
+        if (memeText == null || memeText.isBlank()) {
+            throw new IllegalStateException("Missing MEME_TEXT");
+        }
 
         CoreConfigValidator.validate();
         System.out.println("Telegram configuration OK");

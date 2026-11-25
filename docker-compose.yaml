@@ -9,8 +9,10 @@ services:
       - ./.env
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      GALLERY_DL_CONFIG: /app/config/gallery-dl.conf
-      MEME_AUDIO_DIR: /audio
+      GALLERY_DL_CONFIG: ${GALLERY_DL_CONFIG}
+      RANDOM_REPLIES: ${RANDOM_REPLIES}
+      MEME_TEXT: ${MEME_TEXT}
+      MEME_AUDIO_DIR: ${MEME_AUDIO_DIR}
       MEME_COOLDOWN: ${MEME_COOLDOWN:-}
     volumes:
       - ./config:/app/config:rw

@@ -29,17 +29,19 @@ public class Main {
     private static final int PROCESSING_WORKERS = 2;
     private static final int PROCESSING_QUEUE_CAPACITY = 100;
 
-    static void main(String[] args) throws IOException, InterruptedException {
+    static void main() throws IOException, InterruptedException {
 
         ConfigValidator.validate();
 
         String token = System.getenv("TELEGRAM_BOT_TOKEN");
         TelegramBotClient telegram = new TelegramBotClient(token);
 
-        TelegramRandomReplyCatalog randomReplies = new TelegramRandomReplyCatalog(
-                Path.of("config/random-replies.txt")
-        );
-        TelegramMemeService memeService = new TelegramMemeService(telegram, Path.of("config/meme.txt"));
+        Path randomRepliesPath = Path.of(System.getenv("RANDOM_REPLIES"));
+        Path memeTextPath = Path.of(System.getenv("MEME_TEXT"));
+
+        TelegramRandomReplyCatalog randomReplies = new TelegramRandomReplyCatalog(randomRepliesPath);
+        TelegramMemeService memeService = new TelegramMemeService(telegram, memeTextPath);
+
         TelegramMessageMapper messageMapper = new TelegramMessageMapper();
         TelegramMediaSender mediaSender = new TelegramMediaSender(telegram, messageMapper, new MediaProcessor());
         ContentExtractionEngine extractionEngine = new EntelloContentExtractionEngine();
