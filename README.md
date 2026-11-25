@@ -3,7 +3,7 @@
 [![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)](https://openjdk.org/)
 [![Maven](https://img.shields.io/badge/Maven-Build-C71A36?logo=apachemaven)](https://maven.apache.org/)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-28a8e8?logo=telegram&logoColor=white)](https://telegram.org/)
-[![java-telegram-bot-API](https://img.shields.io/badge/java-telegram-bot-API-28a8e8?logo=telegram&logoColor=white)](https://github.com/pengrad/java-telegram-bot-API)
+[![java-telegram-bot-API](https://img.shields.io/badge/javaTelegramBotAPI-10.4-28a8e8?logo=telegram&logoColor=white)](https://github.com/pengrad/java-telegram-bot-API)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://www.docker.com/)
 [![Entelloverse](https://img.shields.io/badge/Entelloverse-10)]()
 
