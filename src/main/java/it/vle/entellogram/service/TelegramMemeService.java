@@ -9,12 +9,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Handles meme triggers, cooldowns, and audio delivery. */
 public final class TelegramMemeService {
 
     private static final Logger LOGGER = Logger.getLogger(TelegramMemeService.class.getName());
@@ -33,7 +31,6 @@ public final class TelegramMemeService {
         this.cooldownNanos = readCooldownNanos();
     }
 
-    /** Handles the message if it contains a meme trigger. */
     public boolean handleIfTriggered(String input, long chatId, int sourceMessageId) {
         if (input == null || input.isBlank()) {
             return false;

@@ -2,8 +2,8 @@ package it.vle.entellogram.service;
 
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.service.media.MediaProcessor;
-import it.vle.entellogram.presentation.TelegramMessageMapper;
-import it.vle.entellogram.presentation.TelegramPostRenderer;
+import it.vle.entellogram.presentation.TelegramMessageFormatter;
+import it.vle.entellogram.presentation.TelegramMessage;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -13,30 +13,28 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
-/** Prepares and sends post media while preserving albums, captions, and file order. */
 public final class TelegramMediaSender {
 
     private static final Logger LOGGER = Logger.getLogger(TelegramMediaSender.class.getName());
     private static final long MAX_FILE_SIZE_BYTES = 50L * 1024 * 1024;
 
     private final TelegramBotClient telegram;
-    private final TelegramMessageMapper messageMapper;
+    private final TelegramMessageFormatter messageFormatter;
     private final MediaProcessor mediaProcessor;
 
     public TelegramMediaSender(
             TelegramBotClient telegram,
-            TelegramMessageMapper messageMapper,
+            TelegramMessageFormatter messageFormatter,
             MediaProcessor mediaProcessor
     ) {
         this.telegram = telegram;
-        this.messageMapper = messageMapper;
+        this.messageFormatter = messageFormatter;
         this.mediaProcessor = mediaProcessor;
     }
 
     public PreparedMedia prepare(
             ExtractedPost post,
-            String sourceUrl,
-            TelegramPostRenderer.Content presentation
+            TelegramMessage presentation
     )
             throws IOException {
         if (!post.hasNoMedia()) {
@@ -45,14 +43,12 @@ public final class TelegramMediaSender {
 
         List<Path> media = orderMedia(post.getMedia());
         Path captionMedia = findCaptionMedia(media);
-        String caption = captionMedia == null
-                ? null
-                : messageMapper.formatCaption(post, sourceUrl, presentation);
-        return new PreparedMedia(media, captionMedia, caption);
-    }
-
-    public void send(long chatId, PreparedMedia prepared) throws IOException {
-        send(chatId, prepared, null);
+        List<String> captionParts = captionMedia == null
+                ? List.of()
+                : messageFormatter.formatCaptionParts(presentation);
+        String caption = captionParts.isEmpty() ? null : captionParts.getFirst();
+        List<String> overflow = captionParts.size() <= 1 ? List.of() : captionParts.subList(1, captionParts.size());
+        return new PreparedMedia(media, captionMedia, caption, overflow);
     }
 
     public void send(long chatId, PreparedMedia prepared, Integer replyToMessageId) throws IOException {
@@ -62,15 +58,18 @@ public final class TelegramMediaSender {
         }
         if (media.size() > 1 && canSendAsMediaGroup(media)) {
             telegram.sendMediaGroup(chatId, media, prepared.caption(), replyToMessageId);
-            return;
+        } else {
+            for (Path file : media) {
+                if (file.equals(prepared.captionMedia())) {
+                    telegram.sendFile(chatId, file, prepared.caption(), replyToMessageId);
+                } else {
+                    telegram.sendFile(chatId, file, null, replyToMessageId);
+                }
+            }
         }
 
-        for (Path file : media) {
-            if (file.equals(prepared.captionMedia())) {
-                telegram.sendFile(chatId, file, prepared.caption(), replyToMessageId);
-            } else {
-                telegram.sendFile(chatId, file, null, replyToMessageId);
-            }
+        for (String overflowMessage : prepared.overflowMessages()) {
+            telegram.sendHtmlMessage(chatId, overflowMessage);
         }
     }
 
@@ -121,9 +120,10 @@ public final class TelegramMediaSender {
         return new BigInteger(suffix);
     }
 
-    public record PreparedMedia(List<Path> files, Path captionMedia, String caption) {
+    public record PreparedMedia(List<Path> files, Path captionMedia, String caption, List<String> overflowMessages) {
         public PreparedMedia {
             files = files == null ? List.of() : List.copyOf(files);
+            overflowMessages = overflowMessages == null ? List.of() : List.copyOf(overflowMessages);
         }
 
         public boolean hasCaptionMedia() {

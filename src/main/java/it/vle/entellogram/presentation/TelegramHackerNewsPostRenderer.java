@@ -3,25 +3,24 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostHackerNews;
 
-import java.util.List;
-
-public class TelegramHackerNewsPostRenderer implements TelegramPostRenderer {
-
-    @Override
-    public boolean supports(ExtractedPost post) {
+public final class TelegramHackerNewsPostRenderer implements TelegramPostRenderer {
+    @Override public boolean supports(ExtractedPost post) {
         return post instanceof ExtractedPostHackerNews;
     }
 
     @Override
-    public TelegramPostRenderer.Content render(ExtractedPost post) {
-        ExtractedPostHackerNews hackerNews = (ExtractedPostHackerNews) post;
-        return TelegramPostRenderer.withDetails(
-                hackerNews.getTitle(),
-                List.of(
-                        TelegramPostRenderer.link("Story", "Open", hackerNews.getUrl()),
-                        TelegramPostRenderer.field("Type", hackerNews.getType()),
-                        TelegramPostRenderer.field("Score", hackerNews.getScore())
-                )
-        );
+    public TelegramMessage render(ExtractedPost post, TelegramPostRenderContext context) {
+        String sourceUrl = context.sourceUrl();
+        ExtractedPostHackerNews hn = (ExtractedPostHackerNews) post;
+        boolean hasDestination = present(hn.getUrl());
+        return new TelegramMessageBuilder()
+                .title(hn.getTitle(), hasDestination ? hn.getUrl() : null)
+                .space()
+                .author(hn.getAuthor(), null)
+                .body(hn.getText())
+                .source("Source: Hacker News", hasDestination ? sourceUrl : null)
+                .build();
     }
+
+    private boolean present(String value) { return value != null && !value.isBlank(); }
 }

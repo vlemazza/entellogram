@@ -6,6 +6,7 @@ import it.vle.entellocore.service.EntelloContentExtractionEngine;
 import it.vle.entellocore.service.media.MediaProcessor;
 import it.vle.entellogram.listener.TelegramUpdateListener;
 import it.vle.entellogram.presentation.TelegramMessageMapper;
+import it.vle.entellogram.presentation.TelegramMessageFormatter;
 import it.vle.entellogram.service.TelegramBotClient;
 import it.vle.entellogram.service.TelegramMediaSender;
 import it.vle.entellogram.service.TelegramMemeService;
@@ -43,7 +44,8 @@ public class Main {
         TelegramMemeService memeService = new TelegramMemeService(telegram, memeTextPath);
 
         TelegramMessageMapper messageMapper = new TelegramMessageMapper();
-        TelegramMediaSender mediaSender = new TelegramMediaSender(telegram, messageMapper, new MediaProcessor());
+        TelegramMessageFormatter messageFormatter = new TelegramMessageFormatter();
+        TelegramMediaSender mediaSender = new TelegramMediaSender(telegram, messageFormatter, new MediaProcessor());
         ContentExtractionEngine extractionEngine = new EntelloContentExtractionEngine();
 
         ExecutorService processingExecutor = new ThreadPoolExecutor(
@@ -59,6 +61,7 @@ public class Main {
                 randomReplies,
                 processingExecutor,
                 messageMapper,
+                messageFormatter,
                 mediaSender,
                 memeService
         );

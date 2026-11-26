@@ -3,21 +3,21 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostYoutube;
 
-import java.util.List;
-
-public class TelegramYoutubePostRenderer implements TelegramPostRenderer {
-
-    @Override
-    public boolean supports(ExtractedPost post) {
+public final class TelegramYoutubePostRenderer implements TelegramPostRenderer {
+    @Override public boolean supports(ExtractedPost post) {
         return post instanceof ExtractedPostYoutube;
     }
 
     @Override
-    public TelegramPostRenderer.Content render(ExtractedPost post) {
-        ExtractedPostYoutube youtubePost = (ExtractedPostYoutube) post;
-        return TelegramPostRenderer.withDetails(
-                null,
-                List.of(TelegramPostRenderer.link("Channel", youtubePost.getChannel(), youtubePost.getChannelUrl()))
-        );
+    public TelegramMessage render(ExtractedPost post, TelegramPostRenderContext context) {
+        String sourceUrl = context.sourceUrl();
+        ExtractedPostYoutube youtube = (ExtractedPostYoutube) post;
+        return new TelegramMessageBuilder()
+                .title(youtube.getTitle())
+                .author(youtube.getAuthor(), null)
+                .link(youtube.getChannel(), youtube.getChannelUrl())
+                .timestamp(youtube.getTimestamp())
+                .source("Source: YouTube", sourceUrl)
+                .build();
     }
 }

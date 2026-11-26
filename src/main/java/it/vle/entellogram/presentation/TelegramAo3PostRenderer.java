@@ -3,25 +3,32 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostAO3;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class TelegramAo3PostRenderer implements TelegramPostRenderer {
-    @Override
-    public boolean supports(ExtractedPost post) { return post instanceof ExtractedPostAO3; }
+public final class TelegramAo3PostRenderer implements TelegramPostRenderer {
+    @Override public boolean supports(ExtractedPost post) {
+        return post instanceof ExtractedPostAO3;
+    }
 
     @Override
-    public TelegramPostRenderer.Content render(ExtractedPost post) {
+    public TelegramMessage render(ExtractedPost post, TelegramPostRenderContext context) {
+        String sourceUrl = context.sourceUrl();
         ExtractedPostAO3 ao3 = (ExtractedPostAO3) post;
-        List<TelegramPostRenderer.Field> fields = new ArrayList<>();
-        fields.add(TelegramPostRenderer.field("Rating", TelegramPostRenderer.join(ao3.getRating())));
-        fields.add(TelegramPostRenderer.field("Category", TelegramPostRenderer.join(ao3.getCategories())));
-        fields.add(TelegramPostRenderer.field("Fandom", TelegramPostRenderer.join(ao3.getFandoms())));
-        fields.add(TelegramPostRenderer.field("Relationship", TelegramPostRenderer.join(ao3.getRelationships())));
-        fields.add(TelegramPostRenderer.field("Characters", TelegramPostRenderer.join(ao3.getCharacters())));
-        String stats = "Words: " + ao3.getWords() + "\nChapters: " + ao3.getChapters()
-                + "\nKudos: " + ao3.getKudos() + "\nHits: " + ao3.getHits();
-        fields.add(TelegramPostRenderer.field("Stats", stats));
-        return TelegramPostRenderer.withDetails(ao3.getTitle(), fields);
+        return new TelegramMessageBuilder()
+                .title(ao3.getTitle())
+                .author(ao3.getAuthor(), null)
+                .body(ao3.getText())
+                .detail(joined("Rating", ao3.getRating()))
+                .detail(joined("Category", ao3.getCategories()))
+                .detail(joined("Fandom", ao3.getFandoms()))
+                .detail(joined("Relationship", ao3.getRelationships()))
+                .detail(joined("Characters", ao3.getCharacters()))
+                .detail("Words: " + ao3.getWords() + "\nChapters: " + ao3.getChapters()
+                        + "\nKudos: " + ao3.getKudos() + "\nHits: " + ao3.getHits())
+                .timestamp(ao3.getTimestamp())
+                .source("Source: Archive of Our Own", sourceUrl)
+                .build();
+    }
+
+    private String joined(String label, java.util.List<String> values) {
+        return values == null || values.isEmpty() ? null : label + ": " + String.join(", ", values);
     }
 }

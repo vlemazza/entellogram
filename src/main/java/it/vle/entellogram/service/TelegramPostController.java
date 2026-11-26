@@ -3,8 +3,9 @@ package it.vle.entellogram.service;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.TextExtractionOutcome;
 import it.vle.entellocore.service.ContentExtractionEngine;
+import it.vle.entellogram.presentation.TelegramMessageFormatter;
 import it.vle.entellogram.presentation.TelegramMessageMapper;
-import it.vle.entellogram.presentation.TelegramPostRenderer;
+import it.vle.entellogram.presentation.TelegramMessage;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,6 +24,7 @@ public class TelegramPostController {
     private final TelegramRandomReplyCatalog randomReplies;
     private final Executor processingExecutor;
     private final TelegramMessageMapper messageMapper;
+    private final TelegramMessageFormatter messageFormatter;
     private final TelegramMediaSender mediaSender;
     private final TelegramMemeService memeService;
 
@@ -32,6 +34,7 @@ public class TelegramPostController {
             TelegramRandomReplyCatalog randomReplies,
             Executor processingExecutor,
             TelegramMessageMapper messageMapper,
+            TelegramMessageFormatter messageFormatter,
             TelegramMediaSender mediaSender,
             TelegramMemeService memeService
     ) {
@@ -40,6 +43,7 @@ public class TelegramPostController {
         this.randomReplies = randomReplies;
         this.processingExecutor = processingExecutor;
         this.messageMapper = messageMapper;
+        this.messageFormatter = messageFormatter;
         this.mediaSender = mediaSender;
         this.memeService = memeService;
     }
@@ -145,15 +149,15 @@ public class TelegramPostController {
             DownloadAcknowledgement acknowledgement
     ) throws IOException {
         try {
-            TelegramPostRenderer.Content presentation = messageMapper.prepare(post, sourceUrl);
-            TelegramMediaSender.PreparedMedia media = mediaSender.prepare(post, sourceUrl, presentation);
+            TelegramMessage presentation = messageMapper.prepare(post, sourceUrl);
+            TelegramMediaSender.PreparedMedia media = mediaSender.prepare(post, presentation);
 
-            String textPost = media.hasCaptionMedia()
-                    ? ""
-                    : messageMapper.formatText(post, sourceUrl, presentation);
+            List<String> textParts = media.hasCaptionMedia()
+                    ? List.of()
+                    : messageFormatter.formatTextParts(presentation);
             acknowledgement.delete();
-            if (!textPost.isBlank()) {
-                telegram.sendHtmlMessage(chatId, textPost);
+            for (String textPart : textParts) {
+                telegram.sendHtmlMessage(chatId, textPart);
             }
 
             mediaSender.send(chatId, media, sourceMessageId);

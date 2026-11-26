@@ -3,23 +3,20 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostTiktok;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class TelegramTiktokPostRender implements TelegramPostRenderer {
-
-    @Override
-    public boolean supports(ExtractedPost post){
-        return post instanceof  ExtractedPostTiktok;
+public final class TelegramTiktokPostRender implements TelegramPostRenderer {
+    @Override public boolean supports(ExtractedPost post) {
+        return post instanceof ExtractedPostTiktok;
     }
 
     @Override
-    public TelegramPostRenderer.Content render(ExtractedPost post) {
+    public TelegramMessage render(ExtractedPost post, TelegramPostRenderContext context) {
+        String sourceUrl = context.sourceUrl();
         ExtractedPostTiktok tiktok = (ExtractedPostTiktok) post;
-
-
-        return new TelegramPostRenderer.Content(
-                null, tiktok.getText(), tiktok.getAuthor(), null, tiktok.getUrlProfile(), false, null, false
-        );
+        return new TelegramMessageBuilder()
+                .author(tiktok.getAuthor(), tiktok.getUrlProfile())
+                .body(tiktok.getText())
+                .timestamp(tiktok.getTimestamp())
+                .source("Source: TikTok", sourceUrl)
+                .build();
     }
 }

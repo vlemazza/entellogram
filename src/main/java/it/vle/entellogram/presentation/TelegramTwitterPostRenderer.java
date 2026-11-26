@@ -3,46 +3,28 @@ package it.vle.entellogram.presentation;
 import it.vle.entellocore.model.ExtractedPost;
 import it.vle.entellocore.model.ExtractedPostTwitter;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class TelegramTwitterPostRenderer implements TelegramPostRenderer {
-
-    @Override
-    public boolean supports(ExtractedPost post) {
+public final class TelegramTwitterPostRenderer implements TelegramPostRenderer {
+    @Override public boolean supports(ExtractedPost post) {
         return post instanceof ExtractedPostTwitter;
     }
 
     @Override
-    public TelegramPostRenderer.Content render(ExtractedPost post) {
+    public TelegramMessage render(ExtractedPost post, TelegramPostRenderContext context) {
+        String sourceUrl = context.sourceUrl();
         ExtractedPostTwitter twitter = (ExtractedPostTwitter) post;
-
-        List<TelegramPostRenderer.Field> fields = new ArrayList<>();
-
-        addField(fields, "Reply", twitter.getReplyCount());
-        addField(fields, "Retweet", twitter.getRetweetCount());
-        addField(fields, "Quote", twitter.getQuoteCount());
-        addField(fields, "Views", twitter.getViewCount());
-
-        return new TelegramPostRenderer.Content(
-                null,
-                twitter.getText(),
-                twitter.getAuthor(),
-                null,
-                twitter.getUrlProfile(),
-                true,
-                fields,
-                false
-        );
+        return new TelegramMessageBuilder()
+                .author(twitter.getAuthor(), twitter.getUrlProfile())
+                .body(twitter.getText())
+                .detail(value("Reply", twitter.getReplyCount()))
+                .detail(value("Retweet", twitter.getRetweetCount()))
+                .detail(value("Quote", twitter.getQuoteCount()))
+                .detail(value("Views", twitter.getViewCount()))
+                .timestamp(twitter.getTimestamp())
+                .source("Source: Twitter", sourceUrl)
+                .build();
     }
 
-    private void addField(
-            List<TelegramPostRenderer.Field> fields,
-            String name,
-            String value
-    ) {
-        if (value != null && !value.isBlank()) {
-            fields.add(TelegramPostRenderer.field(name, value));
-        }
+    private String value(String label, String value) {
+        return value == null || value.isBlank() ? null : label + ": " + value;
     }
 }
