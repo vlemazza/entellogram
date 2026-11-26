@@ -24,11 +24,28 @@ public final class TelegramMemeService {
     private final long cooldownNanos;
     private final ConcurrentHashMap<ChatMeme, Long> lastMemeByChat = new ConcurrentHashMap<>();
 
-    public TelegramMemeService(TelegramBotClient telegram, Path memeConfigFile) throws IOException {
+    public TelegramMemeService(TelegramBotClient telegram, Path memeConfigFile) {
         this.telegram = telegram;
         this.audioDirectory = Path.of(System.getenv().getOrDefault("MEME_AUDIO_DIR", "/audio")).normalize();
-        this.memes = readMemes(memeConfigFile);
+        this.memes = loadOptionalMemes(memeConfigFile);
         this.cooldownNanos = readCooldownNanos();
+    }
+
+    private List<Meme> loadOptionalMemes(Path file) {
+        if (file == null || !Files.isRegularFile(file) || !Files.isReadable(file)) {
+            LOGGER.info("Meme triggers are disabled because MEME_TEXT is not a readable file.");
+            return List.of();
+        }
+        try {
+            List<Meme> loaded = readMemes(file);
+            if (loaded.isEmpty()) {
+                LOGGER.warning("Meme triggers are disabled because " + file + " contains no meme entries.");
+            }
+            return loaded;
+        } catch (IOException | IllegalArgumentException exception) {
+            LOGGER.log(Level.WARNING, "Meme triggers are disabled because " + file + " could not be loaded.", exception);
+            return List.of();
+        }
     }
 
     public boolean handleIfTriggered(String input, long chatId, int sourceMessageId) {

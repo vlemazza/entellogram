@@ -122,6 +122,8 @@ Set the `TELEGRAM_BOT_TOKEN` in the `.env` file:
 TELEGRAM_BOT_TOKEN=<<TOKEN>>
 ```
 
+`RANDOM_REPLIES` and `MEME_TEXT` are optional. If `RANDOM_REPLIES` is unset or its file is unavailable, Entellogram uses built-in generic replies. If `MEME_TEXT` is unset or its file is unavailable or invalid, meme triggers are disabled.
+
 ### 5. Build and start Entellogram
 
 From the `entellogram` directory, run:

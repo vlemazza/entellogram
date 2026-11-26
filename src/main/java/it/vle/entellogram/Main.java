@@ -16,6 +16,7 @@ import it.vle.entellogram.utils.ConfigValidator;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.InvalidPathException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -30,15 +31,15 @@ public class Main {
     private static final int PROCESSING_WORKERS = 2;
     private static final int PROCESSING_QUEUE_CAPACITY = 100;
 
-    static void main() throws IOException, InterruptedException {
+    static void main() throws InterruptedException {
 
         ConfigValidator.validate();
 
         String token = System.getenv("TELEGRAM_BOT_TOKEN");
         TelegramBotClient telegram = new TelegramBotClient(token);
 
-        Path randomRepliesPath = Path.of(System.getenv("RANDOM_REPLIES"));
-        Path memeTextPath = Path.of(System.getenv("MEME_TEXT"));
+        Path randomRepliesPath = optionalPath("RANDOM_REPLIES");
+        Path memeTextPath = optionalPath("MEME_TEXT");
 
         TelegramRandomReplyCatalog randomReplies = new TelegramRandomReplyCatalog(randomRepliesPath);
         TelegramMemeService memeService = new TelegramMemeService(telegram, memeTextPath);
@@ -82,5 +83,18 @@ public class Main {
             }
         });
         stopped.await();
+    }
+
+    private static Path optionalPath(String environmentVariable) {
+        String configuredPath = System.getenv(environmentVariable);
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return null;
+        }
+        try {
+            return Path.of(configuredPath.trim());
+        } catch (InvalidPathException exception) {
+            LOGGER.log(Level.WARNING, "Ignoring invalid optional path in " + environmentVariable + ".", exception);
+            return null;
+        }
     }
 }
