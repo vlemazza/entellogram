@@ -13,7 +13,7 @@ RUN mvn -B -f entellogram/pom.xml package
 FROM eclipse-temurin:25-jre
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates ffmpeg pipx python3 yt-dlp \
+    && apt-get install -y --no-install-recommends ca-certificates ffmpeg pipx python3 \
     && groupadd --system entellogram \
     && useradd --system --gid entellogram --home-dir /app --shell /usr/sbin/nologin entellogram \
     && mkdir -p /app/config /app/entellogram-config /opt/pipx \
@@ -24,7 +24,9 @@ ENV PIPX_HOME=/opt/pipx
 ENV PIPX_BIN_DIR=/usr/local/bin
 
 RUN pipx install gallery-dl \
-    && pipx inject gallery-dl 'yt-dlp[default]'
+    && pipx inject gallery-dl 'yt-dlp[default]' \
+    && pipx install 'yt-dlp[default]'
+
 
 WORKDIR /app
 COPY --from=build --chown=entellogram:entellogram /build/entellogram/target/entellogram.jar /app/app.jar
