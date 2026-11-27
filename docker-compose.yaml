@@ -14,6 +14,7 @@ services:
       MEME_TEXT: ${MEME_TEXT}
       MEME_AUDIO_DIR: ${MEME_AUDIO_DIR}
       MEME_COOLDOWN: ${MEME_COOLDOWN:-}
+      DEBUG: ${DEBUG:-false}
     volumes:
       - ../config:/app/config:ro
       - ./config:/app/entellogram-config:ro

@@ -121,6 +121,10 @@ public class TelegramPostController {
     }
 
     private void reportPostError(long chatId, int sourceMessageId, String context, Throwable exception) {
+        if (!Boolean.parseBoolean(System.getenv("DEBUG"))) {
+            return;
+        }
+
         StringBuilder message = new StringBuilder(context);
         Throwable cause = exception;
         boolean first = true;
