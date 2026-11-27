@@ -14,7 +14,6 @@ public final class TelegramYoutubePostRenderer implements TelegramPostRenderer {
         ExtractedPostYoutube youtube = (ExtractedPostYoutube) post;
         return new TelegramMessageBuilder()
                 .title(youtube.getTitle())
-                .author(youtube.getAuthor(), null)
                 .link(youtube.getChannel(), youtube.getChannelUrl())
                 .timestamp(youtube.getTimestamp())
                 .source("Source: YouTube", sourceUrl)
