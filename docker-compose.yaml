@@ -9,12 +9,13 @@ services:
       - ./.env
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      GALLERY_DL_CONFIG: ${GALLERY_DL_CONFIG}
+      GALLERY_DL_CONFIG: ${GALLERY_DL_CONFIG:-/app/config/gallery-dl.conf}
       RANDOM_REPLIES: ${RANDOM_REPLIES}
       MEME_TEXT: ${MEME_TEXT}
       MEME_AUDIO_DIR: ${MEME_AUDIO_DIR}
       MEME_COOLDOWN: ${MEME_COOLDOWN:-}
     volumes:
-      - ./config:/app/config:rw
+      - ../config:/app/config:ro
+      - ./config:/app/entellogram-config:ro
       - ./audio:/audio:ro
     restart: unless-stopped

@@ -16,7 +16,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates ffmpeg pipx python3 yt-dlp \
     && groupadd --system entellogram \
     && useradd --system --gid entellogram --home-dir /app --shell /usr/sbin/nologin entellogram \
-    && mkdir -p /app/config /opt/pipx \
+    && mkdir -p /app/config /app/entellogram-config /opt/pipx \
     && chown -R entellogram:entellogram /app /opt/pipx \
     && rm -rf /var/lib/apt/lists/*
 
